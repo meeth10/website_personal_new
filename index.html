@@ -554,6 +554,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .intel-done-text{font-size:.9rem;color:var(--mid);margin-bottom:18px}
 .intel-divider{border:none;border-top:2.5px solid var(--ink);margin:26px 0}
 .intel-vault-empty{font-size:.84rem;color:var(--light);font-style:italic;text-align:center;padding:22px 0}
+/* PDF upload zone */
+.intel-pdf-zone{background:var(--w);border:2.5px solid var(--ink);border-radius:13px;padding:22px 24px;
+  box-shadow:4px 4px 0 var(--bdr);margin-bottom:24px}
+.intel-pdf-zone-title{font-family:var(--comic);font-size:.9rem;letter-spacing:.08em;margin-bottom:10px}
+.intel-pdf-zone-title em{color:var(--red)}
+.intel-pdf-drop{border:2.5px dashed var(--bdr);border-radius:10px;padding:22px 16px;text-align:center;
+  cursor:pointer;transition:all .2s;margin-bottom:10px}
+.intel-pdf-drop:hover,.intel-pdf-drop.drag-on{border-color:var(--ink);background:var(--c2)}
+.intel-pdf-drop.drag-on{border-color:var(--red);background:var(--red-t)}
+.intel-pdf-drop-icon{font-family:var(--comic);font-size:1.8rem;color:var(--bdr);margin-bottom:6px}
+.intel-pdf-drop-lbl{font-size:.8rem;font-weight:700;color:var(--mid);margin-bottom:3px}
+.intel-pdf-drop-sub{font-size:.68rem;color:var(--light)}
+.intel-pdf-queue{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
+.intel-pdf-item{display:flex;align-items:center;gap:9px;background:var(--c2);border:1.5px solid var(--bdr);
+  border-radius:8px;padding:8px 11px;font-size:.78rem}
+.intel-pdf-item-name{flex:1;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.intel-pdf-item-size{font-size:.64rem;color:var(--light);flex-shrink:0}
+.intel-pdf-item-del{background:none;border:none;color:var(--light);cursor:pointer;font-size:.7rem;transition:color .12s;flex-shrink:0}
+.intel-pdf-item-del:hover{color:var(--red)}
+.intel-pdf-status{font-size:.72rem;color:var(--light);min-height:1.1em;letter-spacing:.04em;margin-top:4px}
 
 @media(max-width:960px){
   .hero-grid{grid-template-columns:1fr}
@@ -992,6 +1012,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
       <div class="intel-status" id="intel-status">Ready — vault persists across sessions</div>
       <div class="intel-prog" id="intel-prog"><div class="intel-prog-fill" id="intel-prog-fill"></div></div>
       <div class="intel-err" id="intel-err"></div>
+    </div>
+
+    <!-- PDF upload zone -->
+    <input type="file" id="intel-pdf-inp" multiple accept=".pdf,application/pdf" style="display:none">
+    <div class="intel-pdf-zone rv" style="transition-delay:.15s">
+      <div class="intel-pdf-zone-title">📄 Upload <em>PDF</em> · Summarize any report</div>
+      <div class="intel-pdf-drop" id="intel-pdf-drop"
+           onclick="$('intel-pdf-inp').click()"
+           ondragover="intelPdfDzOver(event)" ondragleave="intelPdfDzLeave()" ondrop="intelPdfDzDrop(event)">
+        <div class="intel-pdf-drop-icon">📂</div>
+        <div class="intel-pdf-drop-lbl">Drop PDFs here or click to upload</div>
+        <div class="intel-pdf-drop-sub">Any report, paper, or McKinsey deck — summarized instantly</div>
+      </div>
+      <div class="intel-pdf-queue" id="intel-pdf-queue"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-sm" id="intel-pdf-btn" onclick="intelSummarizePDFs()" style="display:none">★ Summarize PDFs</button>
+        <div class="intel-pdf-status" id="intel-pdf-status"></div>
+      </div>
     </div>
 
     <!-- Review area (shown during review phase) -->
@@ -1978,6 +2016,91 @@ function intelClearVault(){
   intelRenderVault(); intelUpdateStats();
   intelSetStatus('Vault cleared — ready to scan', null);
   toast('✓ Vault cleared');
+}
+
+/* ── PDF Upload + Summarize ── */
+let _pdfQueue = []; // [{name, size, b64}]
+
+function intelPdfDzOver(e){ e.preventDefault(); $('intel-pdf-drop').classList.add('drag-on'); }
+function intelPdfDzLeave(){ $('intel-pdf-drop').classList.remove('drag-on'); }
+function intelPdfDzDrop(e){ e.preventDefault(); intelPdfDzLeave(); intelPdfLoadFiles(e.dataTransfer.files); }
+$('intel-pdf-inp').addEventListener('change', e=>{ intelPdfLoadFiles(e.target.files); e.target.value=''; });
+
+function intelPdfLoadFiles(files){
+  Array.from(files).filter(f=>f.type==='application/pdf'||f.name.endsWith('.pdf')).forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const b64 = ev.target.result.split(',')[1];
+      _pdfQueue.push({ name: file.name, size: file.size, b64 });
+      intelPdfRenderQueue();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function intelPdfRenderQueue(){
+  const q = $('intel-pdf-queue');
+  const btn = $('intel-pdf-btn');
+  if(!q) return;
+  if(!_pdfQueue.length){ q.innerHTML=''; if(btn) btn.style.display='none'; return; }
+  if(btn) btn.style.display='';
+  q.innerHTML = _pdfQueue.map((f,i)=>`
+    <div class="intel-pdf-item">
+      <span style="font-size:.9rem">📄</span>
+      <span class="intel-pdf-item-name">${ESC(f.name)}</span>
+      <span class="intel-pdf-item-size">${(f.size/1024).toFixed(0)} KB</span>
+      <button class="intel-pdf-item-del" onclick="intelPdfRemove(${i})">✕</button>
+    </div>`).join('');
+}
+
+function intelPdfRemove(i){ _pdfQueue.splice(i,1); intelPdfRenderQueue(); }
+
+function intelPdfSetStatus(msg){ const el=$('intel-pdf-status'); if(el) el.textContent=msg; }
+
+async function intelSummarizePDFs(){
+  if(!_pdfQueue.length){ toast('No PDFs loaded'); return; }
+  const btn=$('intel-pdf-btn');
+  if(btn){ btn.textContent='Summarizing…'; btn.disabled=true; }
+  intelPdfSetStatus('Reading PDFs…');
+
+  const summaries = [];
+  for(let i=0; i<_pdfQueue.length; i++){
+    const f = _pdfQueue[i];
+    intelPdfSetStatus(`Summarizing ${i+1} of ${_pdfQueue.length}: ${f.name}`);
+    try{
+      const d = await intelCallAPI(
+        [{ role:'user', content:[
+          { type:'document', source:{ type:'base64', media_type:'application/pdf', data: f.b64 } },
+          { type:'text', text:`You are a sharp strategy analyst. Summarize this report/paper for a finance & consulting professional (EY/ICICI background, MFE applicant). Return ONLY a JSON object with EXACTLY these keys:\n- "tldr": 1 paragraph, max 65 words, no fluff\n- "bullets": array of EXACTLY 4 key insight strings (max 22 words each)\n- "actions": array of EXACTLY 3 actionable takeaways starting with a strong verb (max 18 words each)\n\nNo markdown. No preamble. Just the JSON object.` }
+        ]}],
+        'Respond only with a valid JSON object. No markdown fences. No explanation.',
+        false, 1600
+      );
+      const p = intelParseJSON(intelText(d));
+      summaries.push({
+        subject: f.name.replace(/\.pdf$/i,''),
+        date: new Date().toLocaleDateString('en-IN'),
+        sender: 'PDF Upload',
+        tldr:    p?.tldr    || 'Could not summarize.',
+        bullets: p?.bullets || [],
+        actions: p?.actions || []
+      });
+    } catch(err){
+      summaries.push({ subject:f.name, date:new Date().toLocaleDateString('en-IN'), sender:'PDF Upload', tldr:'Summarization failed.', bullets:[], actions:[] });
+    }
+  }
+
+  /* Inject into review flow */
+  intelState.summaries = summaries;
+  intelState.idx = 0;
+  intelState.phase = 'reviewing';
+  $('intel-review-area').innerHTML='';
+  intelSetStatus(`${summaries.length} PDF brief${summaries.length>1?'s':''} ready — review below`, 100, false);
+  intelRenderReview();
+
+  intelPdfSetStatus(`✓ Done — ${summaries.length} summarized`);
+  _pdfQueue = []; intelPdfRenderQueue();
+  if(btn){ btn.textContent='★ Summarize PDFs'; btn.disabled=false; }
 }
 
 /* Init Intel on load */
