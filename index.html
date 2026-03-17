@@ -848,6 +848,88 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
   </div>
 </div>
 
+<!-- ████████ PLAN ████████ -->
+<div class="page" id="pg-plan">
+  <div class="plan-left">
+    <div class="plan-title rv">Plan <em>.</em></div>
+    <div class="plan-sub rv">Upload files → dates &amp; tasks auto-extracted. Or add manually.</div>
+    <div class="sprint-sync rv">
+      <div class="sprint-sync-title">★ CURRENT SPRINT</div>
+      <div class="ssi"><div class="ssi-dot" style="background:#D4141E"></div>EV &amp; Battery Supply Chain · Aug 23 deadline</div>
+      <div class="ssi"><div class="ssi-dot" style="background:#1565C0"></div>Semiconductor Industry X-Ray · Active</div>
+      <div class="ssi"><div class="ssi-dot" style="background:#2E7D32"></div>HMM Portfolio Optimizer · Active</div>
+      <div class="ssi"><div class="ssi-dot" style="background:#7B1FA2"></div>ICICI Loan Platform Analysis · Ongoing</div>
+    </div>
+    <div class="drop-zone rv" id="plan-drop"
+         onclick="document.getElementById('plan-file-inp').click()"
+         ondragover="planDzOver(event)" ondragleave="planDzLeave()" ondrop="planDzDrop(event)">
+      <span class="dz-icon">📂</span>
+      <div class="dz-title">Drop files or click to upload</div>
+      <div class="dz-sub">Supports .txt .md .csv — scans for dates, deadlines, meetings and converts them into events.</div>
+    </div>
+    <div class="manual-add rv" style="transition-delay:.1s">
+      <div class="ma-title">★ Add Manually</div>
+      <div class="ma-row"><div class="ma-lbl">What</div><input type="text" class="inp ma-inp" id="ev-title" placeholder="Meeting, deadline, task…" onkeydown="if(event.key==='Enter')addEvent()"></div>
+      <div class="ma-row"><div class="ma-lbl">When</div><input type="date" class="inp ma-inp" id="ev-date" style="max-width:155px"><input type="time" class="inp" id="ev-time" style="width:105px"></div>
+      <div class="ma-row"><div class="ma-lbl">Note</div><textarea class="inp ma-inp" id="ev-note" placeholder="Details…" rows="2" style="resize:none"></textarea></div>
+      <div class="ma-row">
+        <div class="ma-lbl">Type</div>
+        <select class="inp ma-inp" id="ev-type" style="max-width:120px">
+          <option value="task">Task</option><option value="deadline">Deadline</option>
+          <option value="meeting">Meeting</option><option value="study">Study</option>
+        </select>
+        <div class="remind-chk"><input type="checkbox" id="ev-remind"><label for="ev-remind">Remind me</label></div>
+        <button class="btn btn-sm" onclick="addEvent()">Add →</button>
+      </div>
+    </div>
+    <div class="rv" style="transition-delay:.2s">
+      <div class="events-hdr"><span>Events &amp; Tasks</span><button class="btn btn-g btn-sm" onclick="clearDoneEvents()">Clear done</button></div>
+      <div class="events-filters">
+        <button class="ef-btn on" onclick="filterEvents(this,'all')">All</button>
+        <button class="ef-btn" onclick="filterEvents(this,'upcoming')">Upcoming</button>
+        <button class="ef-btn" onclick="filterEvents(this,'deadline')">Deadlines</button>
+        <button class="ef-btn" onclick="filterEvents(this,'meeting')">Meetings</button>
+        <button class="ef-btn" onclick="filterEvents(this,'auto')">Auto-imported</button>
+      </div>
+      <div class="events-list" id="events-list"></div>
+    </div>
+  </div>
+  <div class="plan-right">
+    <div class="psr-title">📌 Sticky Notes</div>
+    <div class="psr-add">
+      <input type="text" class="sticky-inp" id="psr-inp" placeholder="Jot something…" onkeydown="if(event.key==='Enter')addPlanSticky()">
+      <button class="btn btn-sm" onclick="addPlanSticky()">+</button>
+    </div>
+    <div class="psr-list" id="psr-list"></div>
+    <div style="margin-top:20px;padding-top:16px;border-top:2px solid var(--ink)">
+      <div class="psr-title">🔔 Today</div>
+      <div id="today-list"></div>
+    </div>
+    <!-- Pomodoro timer lives here -->
+    <div class="pom-wrap">
+      <div class="pom-title">⏱ Pomodoro</div>
+      <div class="pom-ring">
+        <svg id="pom-svg" width="88" height="88" viewBox="0 0 88 88">
+          <circle id="pom-bg" cx="44" cy="44" r="40"/>
+          <circle id="pom-fg" cx="44" cy="44" r="40"/>
+        </svg>
+        <div class="pom-face" id="pom-face">25:00</div>
+      </div>
+      <div class="pom-sub" id="pom-eye">FOCUS TIME</div>
+      <div class="pom-sub" id="pom-mode">Session 1</div>
+      <div class="pom-btns">
+        <button class="btn btn-sm" id="pom-btn" onclick="pomToggle()">▶ Start</button>
+        <button class="btn btn-g btn-sm" onclick="pomReset()">↺</button>
+      </div>
+      <div class="pom-settings">
+        <div class="prow"><label>Focus (min)</label><input type="number" id="pom-fm" value="25" min="1" max="99" onchange="pomReset()"></div>
+        <div class="prow"><label>Break (min)</label><input type="number" id="pom-bm" value="5"  min="1" max="30" onchange="pomReset()"></div>
+        <div class="prow"><label>Sessions done</label><span class="sess-v" id="pom-sess">0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ████████ INTEL (fused PDF analysis + note extraction) ████████ -->
 <div class="page" id="pg-intel">
   <div class="intel-shell">
@@ -993,6 +1075,13 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
         </div>
       </div>
 
+      <!-- Pomodoro in fun zone too -->
+      <div class="fz-card">
+        <div class="fz-card-label">⏱ FOCUS TIMER</div>
+        <div style="text-align:center;font-size:.8rem;color:var(--mid);line-height:1.6">Timer lives in the Plan tab.<br>It runs even when you switch tabs.</div>
+        <button class="btn btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="showTab('plan')">→ Go to Plan</button>
+      </div>
+
       <!-- Vibe check mini log -->
       <div class="fz-card">
         <div class="fz-card-label">📊 TODAY IN NUMBERS</div>
@@ -1011,7 +1100,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 </div>
 
 <!-- ████████████████ SCRIPT ████████████████ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 'use strict';
 
 /* ── utils ── */
@@ -1430,6 +1519,132 @@ function importFilesAsNotes(files){
     reader.readAsText(file);
   });
 }
+
+/* ════════════════════════════
+   PLAN
+════════════════════════════ */
+let events       = LS.get('cave_events')    || [];
+let planStickies = LS.get('cave_pstickies') || [];
+let evFilter     = 'all';
+
+function planDzOver(e)  { e.preventDefault(); $('plan-drop').classList.add('drag-on'); }
+function planDzLeave()  { $('plan-drop').classList.remove('drag-on'); }
+function planDzDrop(e)  { e.preventDefault(); planDzLeave(); parseFilesForPlan(e.dataTransfer.files); }
+$('plan-file-inp').addEventListener('change', e=>{ parseFilesForPlan(e.target.files); e.target.value=''; });
+
+function parseFilesForPlan(files){
+  Array.from(files).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const extracted=extractEvents(ev.target.result, file.name);
+      extracted.forEach(ev=>events.push(ev));
+      LS.set('cave_events',events); renderEvents(); renderToday(); updatePlanBadge();
+      toast(`✓ ${extracted.length} event${extracted.length!==1?'s':''} from "${file.name}"`);
+    };
+    reader.readAsText(file);
+  });
+}
+function extractEvents(text, fname){
+  const results=[], today=new Date(); let m;
+  const isoRe=/(\d{4}-\d{2}-\d{2})[^\n]*/g;
+  while((m=isoRe.exec(text))!==null){
+    const ds=m[1]; if(!isValidDate(ds)) continue;
+    const title=m[0].trim().replace(ds,'').replace(/[:\-–—]/g,' ').replace(/\s+/g,' ').trim().slice(0,70)||'Event';
+    results.push({id:'ev'+Date.now()+Math.random(),title,date:ds,note:`From: ${fname}`,type:'auto',remind:false,done:false,source:fname});
+  }
+  const mRe=/\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*(\d{4}))?[^\n]*/gi;
+  while((m=mRe.exec(text))!==null){
+    const mon=m[1], day=parseInt(m[2]), yr=m[3]?parseInt(m[3]):today.getFullYear();
+    const mi=['january','february','march','april','may','june','july','august','september','october','november','december'].findIndex(mn=>mn.startsWith(mon.toLowerCase().slice(0,3)));
+    if(mi<0||day<1||day>31) continue;
+    const key=`${yr}-${String(mi+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const title=m[0].trim().replace(m[0].slice(0,mon.length+3),'').replace(/[:\-–—]/g,' ').replace(/\s+/g,' ').trim().slice(0,70)||`${mon} ${day}`;
+    results.push({id:'ev'+Date.now()+Math.random(),title,date:key,note:`From: ${fname}`,type:'auto',remind:false,done:false,source:fname});
+  }
+  const kwRe=/(?:deadline|due|meet(?:ing)?|review|submit|present(?:ation)?|call|exam|test)[:\s]+([^\n.,;]{5,60})/gi;
+  while((m=kwRe.exec(text))!==null){
+    const t=m[1].trim().slice(0,60);
+    if(!results.some(r=>r.title===t)) results.push({id:'ev'+Date.now()+Math.random(),title:t,date:todayKey(),note:`Keyword from: ${fname}`,type:'task',remind:false,done:false,source:fname});
+  }
+  const seen=new Set();
+  return results.filter(r=>{ const k=r.title+'|'+r.date; if(seen.has(k))return false; seen.add(k); return true; });
+}
+function isValidDate(s){ const d=new Date(s); return !isNaN(d.getTime()) && s.length===10; }
+
+function addEvent(){
+  const title=$('ev-title')?.value.trim(); if(!title){ toast('Add a title'); return; }
+  const date=$('ev-date')?.value;           if(!date){  toast('Pick a date'); return; }
+  const ev={id:'ev'+Date.now(),title,date,time:$('ev-time').value,note:$('ev-note').value.trim(),type:$('ev-type').value,remind:$('ev-remind').checked,done:false};
+  events.push(ev); LS.set('cave_events',events);
+  if(ev.remind) schedReminder(ev);
+  $('ev-title').value=''; $('ev-note').value=''; $('ev-remind').checked=false;
+  renderEvents(); renderToday(); updatePlanBadge(); toast('✓ Event added');
+}
+function delEvent(id)    { events=events.filter(e=>e.id!==id); LS.set('cave_events',events); renderEvents(); renderToday(); updatePlanBadge(); }
+function doneEvent(id)   { const ev=events.find(e=>e.id===id); if(ev) ev.done=!ev.done; LS.set('cave_events',events); renderEvents(); updatePlanBadge(); }
+function clearDoneEvents(){ events=events.filter(e=>!e.done); LS.set('cave_events',events); renderEvents(); updatePlanBadge(); toast('Done events cleared'); }
+function filterEvents(btn, f){ evFilter=f; document.querySelectorAll('.ef-btn').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); renderEvents(); }
+function updatePlanBadge(){ const open=events.filter(e=>!e.done).length; const b=$('plan-badge'); if(b){ b.textContent=open; b.style.display=open?'':'none'; } }
+function renderEvents(){
+  const list=$('events-list'); if(!list) return;
+  const today=new Date(); today.setHours(0,0,0,0);
+  let filtered=events;
+  if(evFilter==='upcoming') filtered=events.filter(e=>!e.done && new Date(e.date)>=today);
+  else if(evFilter!=='all') filtered=events.filter(e=>e.type===evFilter);
+  filtered=[...filtered].sort((a,b)=>a.date.localeCompare(b.date));
+  if(!filtered.length){ list.innerHTML='<div class="ev-empty">No events yet.</div>'; return; }
+  list.innerHTML=filtered.map(ev=>{
+    const isOverdue=!ev.done && new Date(ev.date)<today;
+    return `<div class="ev-card${isOverdue?' overdue':''}${ev.done?' done':''}">
+      <span class="ev-badge ${ev.type||'task'}">${ev.type||'task'}${ev.source?' · auto':''}</span>
+      <div class="ev-date">★ ${ev.date}${ev.time?' · '+ev.time:''}</div>
+      <div class="ev-title">${ESC(ev.title)}</div>
+      ${ev.note?`<div class="ev-note">${ESC(ev.note)}</div>`:''}
+      <div class="ev-actions">
+        <button class="ev-done-btn" onclick="doneEvent('${ev.id}')">${ev.done?'↩ Undo':'✓ Done'}</button>
+        <button class="ev-del-btn"  onclick="delEvent('${ev.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function renderToday(){
+  const list=$('today-list'); if(!list) return;
+  const today=todayKey();
+  const todayEvs=events.filter(e=>e.date===today && !e.done);
+  if(!todayEvs.length){ list.innerHTML='<div style="font-size:.77rem;color:var(--light);font-style:italic">Nothing today</div>'; return; }
+  list.innerHTML=todayEvs.map(e=>`
+    <div class="psr-sticky" style="background:var(--red-t);border-color:var(--red)">
+      <div class="psr-sticky-text" style="font-weight:700;color:var(--red);font-size:.82rem">${ESC(e.title)}</div>
+      <div class="psr-sticky-date">${e.time||'All day'} · ${e.type}</div>
+    </div>`).join('');
+}
+function schedReminder(ev){
+  if(!('Notification' in window)) return;
+  Notification.requestPermission().then(p=>{
+    if(p!=='granted') return;
+    const dt=new Date(`${ev.date}T${ev.time||'09:00'}`); const ms=dt-Date.now()-900000;
+    if(ms>0) setTimeout(()=>new Notification(`⏰ ${ev.title}`,{body:ev.note||'15 min away'}),ms);
+  });
+}
+function addPlanSticky(){
+  const text=$('psr-inp')?.value.trim(); if(!text) return;
+  planStickies.unshift({id:'s'+Date.now(),text,ts:Date.now()}); LS.set('cave_pstickies',planStickies); $('psr-inp').value=''; renderPlanStickies();
+}
+function delPlanSticky(id){ planStickies=planStickies.filter(s=>s.id!==id); LS.set('cave_pstickies',planStickies); renderPlanStickies(); }
+function renderPlanStickies(){
+  const list=$('psr-list'); if(!list) return;
+  if(!planStickies.length){ list.innerHTML='<div style="font-size:.76rem;color:var(--light);font-style:italic">No stickies</div>'; return; }
+  list.innerHTML=planStickies.map(s=>`
+    <div class="psr-sticky">
+      <div class="psr-sticky-text">${ESC(s.text)}</div>
+      <div class="psr-sticky-date">${fmtTS(s.ts)}</div>
+      <button class="psr-sticky-del" onclick="delPlanSticky('${s.id}')">✕</button>
+    </div>`).join('');
+}
+
+// Init plan
+if($('ev-date')) $('ev-date').value=todayKey();
+updatePlanBadge();
 
 /* ════════════════════════════
    DEAL ROOM
