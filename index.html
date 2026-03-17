@@ -464,131 +464,109 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
 /* ===== INTEL ===== */
 #pg-intel.on{display:block}
-.intel-wrap{max-width:860px;margin:0 auto;padding:40px 32px 60px}
-.intel-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:14px}
-.intel-hdr-left{}
-.intel-eyebrow{font-family:var(--comic);font-size:.72rem;letter-spacing:.2em;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.intel-shell{display:grid;grid-template-columns:1fr 300px;gap:0;height:calc(100vh - 56px);overflow:hidden}
+.intel-main{overflow-y:auto;padding:32px 32px 60px;min-width:0}
+.intel-main::-webkit-scrollbar{width:3px}
+.intel-main::-webkit-scrollbar-thumb{background:var(--bdr)}
+.intel-hdr{margin-bottom:24px}
+.intel-eyebrow{font-family:var(--comic);font-size:.65rem;letter-spacing:.22em;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .intel-eyebrow::before{content:'★'}
-.intel-title{font-family:var(--comic);font-size:2rem;letter-spacing:.06em;line-height:1}
+.intel-title{font-family:var(--comic);font-size:2.2rem;letter-spacing:.06em;line-height:1;margin-bottom:4px}
 .intel-title em{color:var(--red);font-style:italic}
-.intel-sub{font-size:.76rem;color:var(--light);margin-top:5px}
-.intel-stats{text-align:right;font-size:.72rem;color:var(--light);line-height:1.8}
-.intel-stats strong{color:var(--red);font-weight:700}
-
-/* Scan zone */
-.intel-scan-zone{background:var(--w);border:2.5px solid var(--ink);border-radius:13px;padding:22px 24px;
-  box-shadow:4px 4px 0 var(--bdr);margin-bottom:24px}
-.intel-scan-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.intel-scan-label{font-family:var(--comic);font-size:.9rem;letter-spacing:.08em;flex:1;min-width:160px}
-.intel-scan-label em{color:var(--red)}
-.intel-status{font-size:.72rem;color:var(--light);margin-top:6px;min-height:1.1em;letter-spacing:.04em}
-.intel-prog{height:3px;background:var(--bdr);border-radius:2px;margin-top:10px;overflow:hidden;display:none}
-.intel-prog-fill{height:100%;background:var(--red);border-radius:2px;transition:width .4s var(--ease);width:0%}
-.intel-prog.on{display:block}
-@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-.intel-prog-fill.spin{animation:shimmer 1.2s infinite;background:linear-gradient(90deg,var(--bdr),var(--red),var(--bdr));width:100%}
-
-/* Review card */
-.intel-review{background:var(--w);border:2.5px solid var(--ink);border-radius:13px;padding:24px 26px;
-  box-shadow:5px 5px 0 var(--bdr);margin-bottom:20px;animation:slideUp .3s var(--ease)}
-@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.ir-counter{font-family:var(--comic);font-size:.65rem;letter-spacing:.2em;color:var(--light);margin-bottom:6px}
-.ir-meta{font-size:.68rem;color:var(--light);letter-spacing:.08em;margin-bottom:8px;text-transform:uppercase}
-.ir-subject{font-family:var(--serif);font-size:1.4rem;font-weight:900;line-height:1.2;margin-bottom:20px}
-.ir-sec{font-family:var(--comic);font-size:.62rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;margin-bottom:8px;margin-top:18px}
-.ir-tldr{font-size:.87rem;line-height:1.8;color:var(--mid);border-left:3px solid var(--gold);padding-left:14px}
-.ir-bullets{display:flex;flex-direction:column;gap:9px}
-.ir-bullet{display:flex;gap:11px;align-items:flex-start}
-.ir-bnum{font-family:var(--comic);font-size:.75rem;color:var(--red);flex-shrink:0;padding-top:1px;min-width:20px}
-.ir-btext{font-size:.86rem;color:var(--ink);line-height:1.65}
-.ir-actions-box{background:var(--c);border:1.5px solid var(--bdr);border-radius:9px;padding:14px 16px}
-.ir-action{display:flex;gap:9px;align-items:flex-start;margin-bottom:7px}
-.ir-action:last-child{margin-bottom:0}
-.ir-arrow{color:var(--red);font-size:.8rem;flex-shrink:0;padding-top:2px}
-.ir-atext{font-size:.84rem;color:var(--mid);line-height:1.6}
-.ir-btns{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap}
-.ir-btn-dis{background:transparent;color:var(--light);border:2px solid var(--bdr);border-radius:8px;
-  padding:9px 26px;font-size:.78rem;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .16s}
-.ir-btn-dis:hover{border-color:var(--red);color:var(--red)}
-.ir-btn-keep{background:var(--ink);color:var(--w);border:2px solid var(--ink);border-radius:8px;
-  padding:9px 26px;font-size:.78rem;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .16s}
-.ir-btn-keep:hover{background:var(--red);border-color:var(--red);transform:translateY(-2px);box-shadow:3px 3px 0 var(--red2)}
-
-/* Vault */
-.intel-vault-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:9px}
-.intel-vault-title{font-family:var(--comic);font-size:1.2rem;letter-spacing:.06em}
-.intel-vault-title em{color:var(--red)}
-.intel-card{background:var(--w);border:2px solid var(--ink);border-radius:11px;
-  box-shadow:3px 3px 0 var(--bdr);margin-bottom:12px;overflow:hidden;transition:box-shadow .16s}
-.intel-card:hover{box-shadow:5px 5px 0 var(--bdr)}
-.ic-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;cursor:pointer;user-select:none;border-left:4px solid var(--gold)}
-.ic-left{}
-.ic-meta{font-size:.62rem;color:var(--light);letter-spacing:.08em;margin-bottom:3px;text-transform:uppercase}
-.ic-subject{font-size:.92rem;font-weight:700;line-height:1.3}
-.ic-expand{font-size:.68rem;color:var(--light);background:var(--c);border:1.5px solid var(--bdr);border-radius:5px;padding:3px 10px;cursor:pointer;transition:all .13s;flex-shrink:0;margin-left:12px}
-.ic-expand:hover{border-color:var(--red);color:var(--red)}
-.ic-body{display:none;padding:0 18px 18px 22px;border-top:1px solid var(--bdr)}
-.ic-body.open{display:block}
-.ic-sec{font-family:var(--comic);font-size:.58rem;letter-spacing:.25em;color:var(--gold);text-transform:uppercase;margin-top:14px;margin-bottom:7px}
-.ic-tldr{font-size:.83rem;color:var(--mid);line-height:1.75;border-left:2px solid var(--bdr);padding-left:12px}
-.ic-bullets{display:flex;flex-direction:column;gap:7px}
-.ic-bullet{display:flex;gap:9px;align-items:flex-start}
-.ic-bnum{font-family:var(--comic);font-size:.7rem;color:var(--red);min-width:16px;flex-shrink:0;padding-top:1px}
-.ic-btext{font-size:.82rem;color:var(--ink);line-height:1.6}
-.ic-acts{background:var(--c);border-radius:7px;padding:11px 14px}
-.ic-act{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
-.ic-act:last-child{margin-bottom:0}
-.ic-arrow{color:var(--mid);font-size:.78rem}
-.ic-atext{font-size:.8rem;color:var(--mid);line-height:1.6}
-.ic-foot{display:flex;justify-content:flex-end;padding:9px 18px 0}
-.ic-del{background:none;border:none;color:var(--light);cursor:pointer;font-size:.68rem;transition:color .12s}
-.ic-del:hover{color:var(--red)}
-
-/* Error / idle states */
-.intel-idle{text-align:center;padding:48px 0}
-.intel-idle-icon{font-family:var(--comic);font-size:3rem;color:var(--bdr);margin-bottom:12px}
-.intel-idle-text{font-size:.9rem;color:var(--light);line-height:1.7;margin-bottom:24px;max-width:380px;margin-left:auto;margin-right:auto}
-.intel-err{font-size:.75rem;color:var(--red);margin-top:12px;text-align:center;font-weight:600}
-.intel-done-msg{text-align:center;padding:28px 0 18px}
-.intel-done-icon{font-family:var(--comic);font-size:2rem;margin-bottom:8px}
-.intel-done-text{font-size:.9rem;color:var(--mid);margin-bottom:18px}
-.intel-divider{border:none;border-top:2.5px solid var(--ink);margin:26px 0}
-.intel-vault-empty{font-size:.84rem;color:var(--light);font-style:italic;text-align:center;padding:22px 0}
-/* Review card extras */
-.ir-doctype{font-family:var(--comic);font-size:.58rem;letter-spacing:.18em;background:var(--ink);
-  color:#fff;padding:3px 10px;border-radius:100px;text-transform:uppercase}
-.ir-theme{font-family:var(--serif);font-size:1rem;font-style:italic;color:var(--gold);margin-top:-12px;margin-bottom:18px;line-height:1.4}
-.ir-stats-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-.ir-stat{background:var(--c2);border:1.5px solid var(--bdr);border-radius:8px;padding:9px 12px;min-width:100px;flex:1}
-.ir-stat-val{font-family:var(--comic);font-size:.95rem;letter-spacing:.04em;color:var(--red);margin-bottom:3px}
-.ir-stat-ctx{font-size:.64rem;color:var(--light);line-height:1.4}
-.ir-sowhat{font-size:.87rem;line-height:1.8;color:var(--mid);background:var(--gold-t);
-  border:1.5px solid var(--gold);border-radius:8px;padding:12px 15px;margin-bottom:4px}
-.ir-framework{font-size:.62rem;font-weight:700;padding:3px 10px;border-radius:100px;
-  background:var(--c2);border:1.5px solid var(--bdr);color:var(--mid)}
-/* vault card extras */
-.ic-sowhat{font-size:.8rem;color:var(--mid);line-height:1.7;background:var(--gold-t);
-  border:1.5px solid var(--gold);border-radius:7px;padding:10px 13px;margin-bottom:4px}
-/* PDF upload zone */
-.intel-pdf-zone{background:var(--w);border:2.5px solid var(--ink);border-radius:13px;padding:22px 24px;
-  box-shadow:4px 4px 0 var(--bdr);margin-bottom:24px}
-.intel-pdf-zone-title{font-family:var(--comic);font-size:.9rem;letter-spacing:.08em;margin-bottom:10px}
-.intel-pdf-zone-title em{color:var(--red)}
-.intel-pdf-drop{border:2.5px dashed var(--bdr);border-radius:10px;padding:22px 16px;text-align:center;
-  cursor:pointer;transition:all .2s;margin-bottom:10px}
-.intel-pdf-drop:hover,.intel-pdf-drop.drag-on{border-color:var(--ink);background:var(--c2)}
-.intel-pdf-drop.drag-on{border-color:var(--red);background:var(--red-t)}
-.intel-pdf-drop-icon{font-family:var(--comic);font-size:1.8rem;color:var(--bdr);margin-bottom:6px}
-.intel-pdf-drop-lbl{font-size:.8rem;font-weight:700;color:var(--mid);margin-bottom:3px}
-.intel-pdf-drop-sub{font-size:.68rem;color:var(--light)}
-.intel-pdf-queue{display:flex;flex-direction:column;gap:7px;margin-bottom:10px}
-.intel-pdf-item{display:flex;align-items:center;gap:9px;background:var(--c2);border:1.5px solid var(--bdr);
-  border-radius:8px;padding:8px 11px;font-size:.78rem}
+.intel-sub{font-size:.76rem;color:var(--light)}
+.intel-drop-hero{border:2.5px dashed var(--bdr);border-radius:14px;padding:32px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--w);margin-bottom:14px;box-shadow:var(--sh-s)}
+.intel-drop-hero:hover,.intel-drop-hero.drag-on{border-color:var(--ink);background:var(--c2);box-shadow:4px 4px 0 var(--bdr)}
+.intel-drop-hero.drag-on{border-color:var(--red);background:var(--red-t)}
+.intel-drop-icon{font-size:2.2rem;margin-bottom:8px}
+.intel-drop-title{font-family:var(--comic);font-size:1.05rem;letter-spacing:.06em;margin-bottom:5px}
+.intel-drop-sub{font-size:.72rem;color:var(--light)}
+.intel-pdf-queue{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.intel-pdf-item{display:flex;align-items:center;gap:9px;background:var(--c2);border:1.5px solid var(--bdr);border-radius:8px;padding:8px 11px;font-size:.78rem}
 .intel-pdf-item-name{flex:1;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .intel-pdf-item-size{font-size:.64rem;color:var(--light);flex-shrink:0}
 .intel-pdf-item-del{background:none;border:none;color:var(--light);cursor:pointer;font-size:.7rem;transition:color .12s;flex-shrink:0}
 .intel-pdf-item-del:hover{color:var(--red)}
-.intel-pdf-status{font-size:.72rem;color:var(--light);min-height:1.1em;letter-spacing:.04em;margin-top:4px}
+.intel-pdf-status{font-size:.72rem;color:var(--light);min-height:1.1em;letter-spacing:.04em}
+.intel-prog{height:3px;background:var(--bdr);border-radius:2px;margin-bottom:16px;overflow:hidden;display:none}
+.intel-prog-fill{height:100%;background:var(--red);border-radius:2px;transition:width .4s var(--ease);width:0%}
+.intel-prog.on{display:block}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.intel-prog-fill.spin{animation:shimmer 1.2s infinite;background:linear-gradient(90deg,var(--bdr),var(--red),var(--bdr));width:100%}
+.intel-review{background:var(--w);border:2.5px solid var(--ink);border-radius:13px;padding:24px 26px;box-shadow:5px 5px 0 var(--bdr);margin-bottom:20px;animation:slideUp .3s var(--ease)}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.ir-doctype{font-family:var(--comic);font-size:.58rem;letter-spacing:.18em;background:var(--ink);color:#fff;padding:3px 10px;border-radius:100px;text-transform:uppercase}
+.ir-theme{font-family:var(--serif);font-size:1rem;font-style:italic;color:var(--gold);margin-top:-10px;margin-bottom:18px;line-height:1.4}
+.ir-counter{font-family:var(--comic);font-size:.65rem;letter-spacing:.2em;color:var(--light);margin-bottom:5px}
+.ir-meta{font-size:.68rem;color:var(--light);letter-spacing:.08em;margin-bottom:7px;text-transform:uppercase}
+.ir-subject{font-family:var(--serif);font-size:1.35rem;font-weight:900;line-height:1.2;margin-bottom:18px}
+.ir-sec{font-family:var(--comic);font-size:.58rem;letter-spacing:.24em;color:var(--gold);text-transform:uppercase;margin-bottom:8px;margin-top:16px}
+.ir-tldr{font-size:.88rem;line-height:1.8;color:var(--mid);border-left:3px solid var(--gold);padding-left:14px}
+.ir-stats-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.ir-stat{background:var(--c2);border:1.5px solid var(--bdr);border-radius:8px;padding:9px 12px;min-width:90px;flex:1}
+.ir-stat-val{font-family:var(--comic);font-size:.9rem;letter-spacing:.04em;color:var(--red);margin-bottom:3px}
+.ir-stat-ctx{font-size:.62rem;color:var(--light);line-height:1.4}
+.ir-bullets{display:flex;flex-direction:column;gap:9px}
+.ir-bullet{display:flex;gap:11px;align-items:flex-start}
+.ir-bnum{font-family:var(--comic);font-size:.75rem;color:var(--red);flex-shrink:0;padding-top:1px;min-width:20px}
+.ir-btext{font-size:.86rem;color:var(--ink);line-height:1.65}
+.ir-sowhat{font-size:.86rem;line-height:1.8;color:var(--mid);background:var(--gold-t);border:1.5px solid var(--gold);border-radius:8px;padding:12px 15px}
+.ir-tangibles{display:flex;flex-direction:column;gap:6px}
+.ir-tangible{display:flex;gap:10px;align-items:flex-start;background:var(--c);border:1.5px solid var(--bdr);border-radius:8px;padding:9px 12px}
+.ir-ttype{font-family:var(--comic);font-size:.54rem;letter-spacing:.12em;flex-shrink:0;padding:2px 7px;border-radius:100px;margin-top:1px}
+.ir-ttype.model{background:var(--red-t);color:var(--red);border:1px solid var(--red)}
+.ir-ttype.apply{background:var(--gold-t);color:var(--gold);border:1px solid var(--gold)}
+.ir-ttype.read{background:#E3F2FD;color:#1565C0;border:1px solid #1565C0}
+.ir-ttype.note{background:#E8F5E9;color:#2E7D32;border:1px solid #2E7D32}
+.ir-ttext{font-size:.83rem;color:var(--ink);line-height:1.6}
+.ir-framework{font-size:.62rem;font-weight:700;padding:3px 10px;border-radius:100px;background:var(--c2);border:1.5px solid var(--bdr);color:var(--mid)}
+.ir-btns{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+.ir-btn-dis{background:transparent;color:var(--light);border:2px solid var(--bdr);border-radius:8px;padding:9px 26px;font-size:.78rem;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .16s}
+.ir-btn-dis:hover{border-color:var(--red);color:var(--red)}
+.ir-btn-keep{background:var(--ink);color:var(--w);border:2px solid var(--ink);border-radius:8px;padding:9px 26px;font-size:.78rem;font-weight:700;letter-spacing:.06em;cursor:pointer;transition:all .16s}
+.ir-btn-keep:hover{background:var(--red);border-color:var(--red);transform:translateY(-2px);box-shadow:3px 3px 0 var(--red2)}
+.intel-vault-panel{border-left:2.5px solid var(--ink);background:var(--w);display:flex;flex-direction:column;overflow:hidden}
+.ivp-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px;border-bottom:2px solid var(--ink);flex-shrink:0}
+.ivp-title{font-family:var(--comic);font-size:1.3rem;letter-spacing:.06em}
+.ivp-title em{color:var(--red)}
+.ivp-folder-bar{display:flex;gap:4px;flex-wrap:wrap;padding:10px 12px 6px;border-bottom:1.5px solid var(--bdr);flex-shrink:0}
+.ivp-ftab{font-size:.62rem;font-weight:700;padding:3px 10px;border-radius:100px;border:1.5px solid var(--bdr);cursor:pointer;background:transparent;color:var(--mid);transition:all .12s;white-space:nowrap}
+.ivp-ftab:hover{border-color:var(--ink);color:var(--ink)}
+.ivp-ftab.on{border-color:var(--red);color:var(--red);background:var(--red-t)}
+.ivp-list{flex:1;overflow-y:auto;padding:10px 12px}
+.ivp-list::-webkit-scrollbar{width:2px}
+.ivp-list::-webkit-scrollbar-thumb{background:var(--bdr)}
+.ivp-empty{font-size:.78rem;color:var(--light);font-style:italic;text-align:center;padding:32px 8px;line-height:1.7}
+.ivc{background:var(--c);border:1.5px solid var(--bdr);border-left:3px solid var(--gold);border-radius:0 9px 9px 0;padding:0;margin-bottom:9px;overflow:hidden;transition:box-shadow .14s}
+.ivc:hover{box-shadow:3px 3px 0 var(--bdr)}
+.ivc-head{display:flex;align-items:flex-start;gap:7px;padding:10px 11px 8px;cursor:pointer}
+.ivc-left{flex:1;min-width:0}
+.ivc-meta{font-size:.58rem;color:var(--light);letter-spacing:.06em;margin-bottom:2px;text-transform:uppercase}
+.ivc-subject{font-size:.82rem;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ivc-folder{font-family:var(--comic);font-size:.54rem;letter-spacing:.1em;color:var(--mid);background:var(--c2);border:1px solid var(--bdr);padding:1px 7px;border-radius:100px;display:inline-block}
+.ivc-star{font-size:.9rem;flex-shrink:0;cursor:pointer;transition:transform .12s;padding-top:1px}
+.ivc-star:hover{transform:scale(1.3)}
+.ivc-expand{font-size:.6rem;color:var(--light);background:none;border:none;cursor:pointer;flex-shrink:0;padding-top:2px;transition:color .12s}
+.ivc-expand:hover{color:var(--red)}
+.ivc-body{display:none;padding:0 11px 11px;border-top:1px solid var(--bdr)}
+.ivc-body.open{display:block}
+.ivc-sec{font-family:var(--comic);font-size:.54rem;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;margin-top:12px;margin-bottom:6px}
+.ivc-tldr{font-size:.78rem;color:var(--mid);line-height:1.7;border-left:2px solid var(--bdr);padding-left:10px}
+.ivc-bullets{display:flex;flex-direction:column;gap:6px}
+.ivc-bullet{display:flex;gap:7px;align-items:flex-start}
+.ivc-bnum{font-family:var(--comic);font-size:.66rem;color:var(--red);min-width:14px;flex-shrink:0}
+.ivc-btext{font-size:.77rem;color:var(--ink);line-height:1.55}
+.ivc-sowhat{font-size:.76rem;color:var(--mid);line-height:1.65;background:var(--gold-t);border:1px solid var(--gold);border-radius:6px;padding:8px 10px}
+.ivc-tangibles{display:flex;flex-direction:column;gap:5px}
+.ivc-tangible{display:flex;gap:7px;align-items:flex-start;font-size:.75rem;color:var(--ink);background:var(--w);border:1px solid var(--bdr);border-radius:6px;padding:6px 9px;line-height:1.5}
+.ivc-del{font-family:var(--comic);font-size:.58rem;letter-spacing:.08em;color:var(--light);background:none;border:none;cursor:pointer;padding:7px 11px 0;transition:color .12s;width:100%;text-align:right;display:block}
+.ivc-del:hover{color:var(--red)}
+.intel-modal{background:var(--w);border:2.5px solid var(--ink);border-radius:14px;padding:24px 26px;box-shadow:6px 6px 0 var(--bdr);max-width:340px;width:90%;animation:slideUp .25s var(--ease)}
+.intel-modal-title{font-family:var(--comic);font-size:1.2rem;letter-spacing:.06em;margin-bottom:4px}
+.intel-modal-sub{font-size:.76rem;color:var(--light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.intel-modal-folders{display:flex;flex-wrap:wrap;gap:6px}
+.imf-btn{font-size:.7rem;font-weight:700;padding:5px 13px;border-radius:100px;border:1.5px solid var(--bdr);cursor:pointer;background:transparent;color:var(--mid);transition:all .12s}
+.imf-btn:hover{border-color:var(--ink);color:var(--ink)}
+.imf-btn.on{border-color:var(--red);color:var(--red);background:var(--red-t)}
 
 @media(max-width:960px){
   .hero-grid{grid-template-columns:1fr}
@@ -640,7 +618,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
         <p class="hero-role">EEE @ Mahindra University · Builder · Quant · Analyst</p>
         <p class="hero-bio">B.Tech EEE, Class of 2026 · 8.0 CGPA. IEEE Vice Head, Electronics Club founder, Math Club Head. EY Strategy &amp; Transactions alum, currently ICICI Bank. Building quant models, strategy papers &amp; a company on the side.</p>
         <div class="hero-pills">
-          <a href="/cdn-cgi/l/email-protection#6b1803041e19120a181f455a5b5b5f2b0c060a020745080406" class="hpill fill">✉ Gmail</a>
+          <a href="mailto:shouryast.1004@gmail.com" class="hpill fill">✉ Gmail</a>
           <a href="https://www.linkedin.com/in/shourya-singh-197043289/" class="hpill out" target="_blank" rel="noopener">in LinkedIn ↗</a>
           <a href="https://github.com/meeth10" class="hpill out" target="_blank" rel="noopener">⌥ GitHub ↗</a>
         </div>
@@ -1006,65 +984,84 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
 <!-- ████████ INTEL ████████ -->
 <div class="page" id="pg-intel">
-  <div class="intel-wrap">
+  <div class="intel-shell">
 
-    <div class="intel-hdr rv">
-      <div class="intel-hdr-left">
-        <div class="intel-eyebrow">Gmail · McKinsey &amp; Company · Live</div>
-        <div class="intel-title">McKinsey <em>Intel.</em></div>
-        <div class="intel-sub">Pulls reports direct from your inbox · AI-distilled · Keep what matters</div>
+    <!-- LEFT: upload + review -->
+    <div class="intel-main">
+      <div class="intel-hdr rv">
+        <div class="intel-eyebrow">PDF Intelligence · Deep Analysis · Vault</div>
+        <div class="intel-title">Intel<em>.</em></div>
+        <div class="intel-sub">Upload any report — get a sharp, personalised brief. Star what matters, file it.</div>
       </div>
-      <div class="intel-stats" id="intel-stats-display"></div>
-    </div>
 
-    <!-- Scan zone -->
-    <div class="intel-scan-zone rv" style="transition-delay:.1s">
-      <div class="intel-scan-row">
-        <div class="intel-scan-label">Scan <em>Gmail</em> for latest McKinsey updates</div>
-        <button class="btn btn-sm" id="intel-scan-btn" onclick="intelScan()">★ Scan Now</button>
-        <button class="btn btn-g btn-sm" onclick="intelClearVault()">✕ Clear Vault</button>
-      </div>
-      <div class="intel-status" id="intel-status">Ready — vault persists across sessions</div>
-      <div class="intel-prog" id="intel-prog"><div class="intel-prog-fill" id="intel-prog-fill"></div></div>
-      <div class="intel-err" id="intel-err"></div>
-    </div>
-
-    <!-- PDF upload zone -->
-    <input type="file" id="intel-pdf-inp" multiple accept=".pdf,application/pdf" style="display:none">
-    <div class="intel-pdf-zone rv" style="transition-delay:.15s">
-      <div class="intel-pdf-zone-title">📄 Upload <em>PDF</em> · Summarize any report</div>
-      <div class="intel-pdf-drop" id="intel-pdf-drop"
+      <!-- Drop zone -->
+      <input type="file" id="intel-pdf-inp" multiple accept=".pdf,application/pdf" style="display:none">
+      <div class="intel-drop-hero rv" id="intel-pdf-drop"
            onclick="$('intel-pdf-inp').click()"
            ondragover="intelPdfDzOver(event)" ondragleave="intelPdfDzLeave()" ondrop="intelPdfDzDrop(event)">
-        <div class="intel-pdf-drop-icon">📂</div>
-        <div class="intel-pdf-drop-lbl">Drop PDFs here or click to upload</div>
-        <div class="intel-pdf-drop-sub">Any report, paper, or McKinsey deck — summarized instantly</div>
+        <div class="intel-drop-icon">📄</div>
+        <div class="intel-drop-title">Drop PDFs here or click to upload</div>
+        <div class="intel-drop-sub">McKinsey · research papers · strategy decks · anything</div>
       </div>
+
+      <!-- Queue -->
       <div class="intel-pdf-queue" id="intel-pdf-queue"></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-sm" id="intel-pdf-btn" onclick="intelSummarizePDFs()" style="display:none">★ Summarize PDFs</button>
+      <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn btn-sm" id="intel-pdf-btn" onclick="intelSummarizePDFs()" style="display:none">★ Analyse PDFs</button>
         <div class="intel-pdf-status" id="intel-pdf-status"></div>
       </div>
+      <div class="intel-prog" id="intel-prog"><div class="intel-prog-fill" id="intel-prog-fill"></div></div>
+
+      <!-- Brief card appears here -->
+      <div id="intel-review-area"></div>
     </div>
 
-    <!-- Review area (shown during review phase) -->
-    <div id="intel-review-area"></div>
-
-    <!-- Vault -->
-    <div id="intel-vault-section" style="display:none">
-      <hr class="intel-divider">
-      <div class="intel-vault-hdr">
-        <div class="intel-vault-title">Saved <em>Vault</em></div>
-        <div id="intel-vault-meta" style="font-size:.72rem;color:var(--light)"></div>
+    <!-- RIGHT: vault -->
+    <div class="intel-vault-panel" id="intel-vault-panel">
+      <div class="ivp-head">
+        <div class="ivp-title">Vault <em>.</em></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <div id="ivp-badge" style="display:none;font-family:var(--comic);font-size:.62rem;background:var(--red);color:#fff;padding:2px 8px;border-radius:100px"></div>
+          <button class="btn btn-g btn-sm" onclick="intelClearVault()" style="font-size:.62rem;padding:4px 10px">✕ Clear</button>
+        </div>
       </div>
-      <div id="intel-vault-list"></div>
+
+      <!-- Folder tabs -->
+      <div class="ivp-folder-bar" id="ivp-folder-bar">
+        <button class="ivp-ftab on" data-folder="all" onclick="intelFolderSwitch(this,'all')">All</button>
+        <button class="ivp-ftab" data-folder="starred" onclick="intelFolderSwitch(this,'starred')">⭐ Starred</button>
+      </div>
+
+      <!-- New folder input -->
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <input type="text" class="inp" id="ivp-new-folder" placeholder="New folder…" style="flex:1;font-size:.72rem;padding:5px 9px">
+        <button class="btn btn-g btn-sm" onclick="intelAddFolder()" style="font-size:.62rem;padding:5px 10px">+</button>
+      </div>
+
+      <div class="ivp-list" id="ivp-list">
+        <div class="ivp-empty">No briefs yet.<br>Analyse a PDF to get started.</div>
+      </div>
     </div>
 
+  </div>
+
+  <!-- Save-to-folder modal -->
+  <div id="intel-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(24,20,14,.55);z-index:800;align-items:center;justify-content:center">
+    <div class="intel-modal" id="intel-modal">
+      <div class="intel-modal-title">★ Save to Vault</div>
+      <div class="intel-modal-sub" id="intel-modal-sub"></div>
+      <div style="margin:14px 0 8px;font-size:.72rem;font-weight:700;color:var(--mid)">Choose folder</div>
+      <div class="intel-modal-folders" id="intel-modal-folders"></div>
+      <div style="display:flex;gap:7px;margin-top:14px">
+        <button class="btn btn-sm" onclick="intelConfirmSave()">↓ Save</button>
+        <button class="btn btn-g btn-sm" onclick="intelCloseModal()">Cancel</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- ████████████████ SCRIPT ████████████████ -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 'use strict';
 
 /* ── utils ── */
@@ -1105,7 +1102,7 @@ function showTab(t){
   if(t==='plan')    { pg.style.display='flex'; renderEvents(); renderPlanStickies(); renderToday(); }
   if(t==='extract') { pg.style.display='flex'; renderMoodUI(); const c=$('ext-count'); if(c) c.textContent=`${notes.length} note${notes.length!==1?'s':''} available`; }
   if(t==='projects'){ renderProjects(); }
-  if(t==='intel')   { intelRenderVault(); intelUpdateStats(); }
+  if(t==='intel')   { intelRenderVault(); intelUpdateBadge(); }
 }
 
 /* ════════════════════════════
@@ -1773,388 +1770,76 @@ function pomToggle(){
 $('pom-sess').textContent=pSess; pSec=pFS(); $('pom-face').textContent=pFmt(pSec); setRing(1);
 
 /* ════════════════════════════
-   INTEL — McKinsey Gmail Scanner
+   INTEL — PDF Intelligence + Vault
 ════════════════════════════ */
 const INTEL_API   = 'https://api.anthropic.com/v1/messages';
 const INTEL_MODEL = 'claude-sonnet-4-20250514';
-const INTEL_MCP   = { type:'url', url:'https://gmail.mcp.claude.com/mcp', name:'gmail' };
-const INTEL_KEY   = 'cave_mckinsey_vault';
+const INTEL_KEY   = 'cave_intel_vault';
+const INTEL_FOLDERS_KEY = 'cave_intel_folders';
 
 let intelState = {
-  phase: 'idle',  // idle | scanning | processing | reviewing | done
-  emails: [],
+  phase: 'idle',
   summaries: [],
   idx: 0,
-  vault: LS.get(INTEL_KEY) || []
+  pendingSave: null,       // brief waiting to be filed
+  selectedFolder: 'General',
+  vault: LS.get(INTEL_KEY) || [],
+  folders: LS.get(INTEL_FOLDERS_KEY) || ['General','McKinsey','Research','Strategy','Quant/Finance','India Macro']
 };
 
-/* ── API helpers ── */
-async function intelCallAPI(messages, system, useMCP, maxTok=2000){
+/* ── API ── */
+async function intelCallAPI(messages, system, maxTok=2400){
   const body = { model: INTEL_MODEL, max_tokens: maxTok, messages };
-  if(system)  body.system     = system;
-  if(useMCP)  body.mcp_servers = [INTEL_MCP];
+  if(system) body.system = system;
   const r = await fetch(INTEL_API, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(body)
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
   });
-  if(!r.ok){ const e=await r.text(); throw new Error(`API error ${r.status}: ${e.slice(0,120)}`); }
+  if(!r.ok){ const e=await r.text(); throw new Error(`API ${r.status}: ${e.slice(0,100)}`); }
   return r.json();
 }
 function intelText(d){ return (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n'); }
 function intelParseJSON(raw){
-  // strip markdown fences
-  let t = raw.replace(/```json[\s\S]*?```/g, m=>m.slice(7,-3))
-             .replace(/```[\s\S]*?```/g,     m=>m.slice(3,-3))
-             .trim();
-  // try direct parse first
-  try{ return JSON.parse(t); } catch(e){}
-  // find outermost {}
+  let t = raw.replace(/```json([\s\S]*?)```/g,'$1').replace(/```([\s\S]*?)```/g,'$1').trim();
+  try{ return JSON.parse(t); }catch(e){}
   const s=t.indexOf('{'), e2=t.lastIndexOf('}');
   if(s>=0 && e2>s){ try{ return JSON.parse(t.slice(s,e2+1)); }catch(e){} }
   return null;
 }
 
-/* ── Master summarization prompt ── */
-const INTEL_SYSTEM = `You are an elite strategy research analyst. The user is Shourya — a final-year EEE student (Mahindra University, CGPA 8.0), EY Strategy & Transactions alum, currently at ICICI Bank analyzing a retail loan platform, targeting MFE programs (CMU, UChicago, Columbia, Cornell) and long-term MBA at Booth/Kellogg, and building quant models (HMM, GARCH, Neural SDE, LBO engines). He reads McKinsey reports to extract signals relevant to: consulting strategy, quant finance, India macro, tech/AI disruption, EV/energy, banking, and career positioning.
+/* ── System prompt ── */
+const INTEL_SYSTEM = `You are a senior partner at a top-tier strategy firm preparing a confidential briefing note for a junior colleague named Shourya. His background: B.Tech EEE (Mahindra University, 8.0 CGPA), EY Strategy and Transactions alum, current ICICI Bank intern analyzing a retail loan processing platform, applying to MFE programs at CMU, UChicago, Columbia and Cornell with a long-term target of MBA at Booth or Kellogg. He builds quantitative models including HMM regime detection, GARCH volatility forecasting, Neural SDE market models and DCF/LBO engines. His reading agenda spans consulting strategy, quantitative finance, Indian macro, technology and AI disruption, EV and energy transition, banking and fintech, and graduate program positioning.
 
-Your job: produce a deeply intelligent, personalized brief — not a generic summary. Cut fluff ruthlessly. Every sentence must earn its place.
+Your writing standard is the McKinsey partner memo: short declarative sentences, no hedging language, no em dashes, no bullet padding, every claim backed by a number or a named source from the document. Write as a senior who respects the reader's time. If a sentence does not add new information it does not belong.
 
-CRITICAL: Respond ONLY with a single valid JSON object. No markdown fences. No preamble. No explanation outside the JSON.`;
+Return ONLY a valid JSON object. No markdown fences. No explanation outside the JSON.`;
 
-function buildSumPrompt(content, meta){
-  return `Analyze the following ${meta.source} and return a JSON object with EXACTLY these keys:
+function buildPrompt(meta){
+  return `Read this ${meta.source} and return a JSON object with exactly these keys.
 
-"doc_type": one of ["Strategy Report","Market Analysis","Industry Research","Economic Outlook","Technology Brief","Policy Paper","Company Analysis","Mixed/Newsletter"]
-"theme": 6-10 word headline capturing the core argument (not the title)
-"tldr": 2-3 sentences max, 70 words max. What is the SINGLE most important thing this says and why it matters now. No filler.
-"key_numbers": array of 3-5 objects {stat, context} — the most important quantitative data points. Only include if numbers actually appear in the text. Each stat max 15 words, context max 12 words.
-"bullets": array of EXACTLY 5 insight strings. Each is a sharp, specific finding — not vague. Include the "so what" in the same sentence. Max 30 words each.
-"so_what": 2-3 sentences. Why does this specifically matter for someone targeting MFE/consulting roles, building quant models, or analyzing Indian banking/fintech? Make it pointed and personal.
-"actions": array of EXACTLY 3 strings starting with a strong imperative verb. Concrete, specific next steps Shourya can actually take. Max 20 words each.
-"frameworks": array of 1-3 strategy/finance frameworks that apply to this report (e.g. Porter's Five Forces, WACC, TAM/SAM, CAPM). Only if genuinely applicable.
+"doc_type": classify as one of Strategy Report, Market Analysis, Industry Research, Economic Outlook, Technology Brief, Policy Paper, Company Analysis, Quant Finance, Newsletter.
 
-${meta.subject ? `Subject/Title: ${meta.subject}` : ''}
-${meta.date    ? `Date: ${meta.date}` : ''}
----
-${content}`;
+"theme": One sentence, maximum 15 words. State the single central argument of the document, not a restatement of the title. Write it as a declarative claim.
+
+"tldr": Two to three sentences, maximum 80 words. Lead with the most important finding. Second sentence adds the key evidence or number. Third sentence states the implication. No filler phrases. No em dashes.
+
+"key_numbers": Array of three to six objects with keys stat and context. Stat is the exact figure from the document in under 15 words. Context explains why that number matters in under 10 words. Include only numbers that genuinely appear in the text.
+
+"insights": Array of exactly six objects with keys headline and detail. Headline is a sharp declarative finding in under 12 words. Detail expands it in under 40 words and includes the implication. Write as a senior analyst would: specific, grounded in the document, forward-looking. Avoid generic observations.
+
+"so_what": Three to four sentences written directly to Shourya. Explain exactly how this document connects to his MFE applications, his ICICI Bank work, his quantitative model stack or his consulting preparation. Name specific connections. Be direct and personal.
+
+"tangible_outputs": Array of exactly five objects with keys type and action. Type is one of MODEL, APPLY, READ, NOTE or SHARE. Action begins with a strong verb and describes a concrete step Shourya can take this week. Maximum 25 words each. Be specific enough that he knows exactly what to do.
+
+"frameworks": Array of one to four strategy or finance frameworks that genuinely apply to this document. Examples include Porters Five Forces, DCF valuation, HMM regime detection, TAM SAM SOM, Value chain analysis. Omit this field if none apply cleanly.
+
+"suggested_folder": One of McKinsey, Research, Strategy, Quant Finance, India Macro, General.
+
+${meta.title ? 'Document: ' + meta.title : ''}
+${meta.date  ? 'Date: '     + meta.date  : ''}`;
 }
 
-/* ── SCAN Gmail ── */
-async function intelScan(){
-  const btn=$('intel-scan-btn'); if(btn){ btn.textContent='Scanning…'; btn.disabled=true; }
-  $('intel-review-area').innerHTML='';
-  intelState.phase='scanning'; intelState.emails=[]; intelState.summaries=[]; intelState.idx=0;
-  intelSetStatus('Connecting to Gmail…', null, true);
-  try{
-    const d = await intelCallAPI(
-      [{ role:'user', content:'Search my Gmail for the 5 most recent emails from McKinsey & Company (sender domain mckinsey.com OR subject containing McKinsey). Retrieve the COMPLETE body text of each email including any forwarded or quoted sections. Return ONLY a valid JSON array, no markdown, no preamble. Each object: {"id":string,"subject":string,"date":string,"sender":string,"body":string} — body must be the full untruncated text.' }],
-      null, true, 6000
-    );
-    const emails = intelParseJSON(intelText(d));
-    if(!emails || !emails.length) throw new Error('No McKinsey emails found. Check Gmail is connected and emails exist.');
-
-    intelState.emails = emails;
-    intelState.phase = 'processing';
-    intelSetStatus(`Found ${emails.length} update${emails.length>1?'s':''}. Running deep analysis…`, 10, false);
-
-    const summaries = [];
-    for(let i=0; i<emails.length; i++){
-      intelSetStatus(`Analyzing ${i+1} of ${emails.length}: "${emails[i].subject.slice(0,40)}…"`, Math.round(10+(i/emails.length)*85), false);
-      const e = emails[i];
-      const body = e.body || '';
-      try{
-        const sd = await intelCallAPI(
-          [{ role:'user', content: buildSumPrompt(body.slice(0,9000), {source:'McKinsey email newsletter', subject:e.subject, date:e.date}) }],
-          INTEL_SYSTEM, false, 2200
-        );
-        const p = intelParseJSON(intelText(sd));
-        summaries.push(p && p.tldr ? { ...e, ...p } : _fallbackSummary(e.subject, 'email'));
-      } catch(err){ summaries.push(_fallbackSummary(e.subject, 'email')); }
-    }
-
-    if(!summaries.length) throw new Error('Analysis failed. Please try again.');
-    intelState.summaries = summaries;
-    intelState.idx = 0;
-    intelState.phase = 'reviewing';
-    intelSetStatus(`${summaries.length} deep brief${summaries.length>1?'s':''} ready`, 100, false);
-    if(btn){ btn.textContent='★ Scan Now'; btn.disabled=false; }
-    intelRenderReview();
-
-  } catch(err){
-    intelSetError('⚠ ' + err.message);
-    intelState.phase='idle';
-    if(btn){ btn.textContent='★ Scan Now'; btn.disabled=false; }
-  }
-}
-
-function _fallbackSummary(subject, source){
-  return { subject, sender: source==='pdf'?'PDF Upload':'McKinsey & Company',
-    date: new Date().toLocaleDateString('en-IN'),
-    doc_type:'Mixed/Newsletter', theme:'Could not analyze content',
-    tldr:'Summarization failed — the document may be too short or inaccessible.',
-    key_numbers:[], bullets:[], so_what:'', actions:[], frameworks:[] };
-}
-function intelSetStatus(msg, progPct, spinning){
-  const s=$('intel-status'), p=$('intel-prog'), pf=$('intel-prog-fill'), e=$('intel-err');
-  if(s) s.textContent = msg;
-  if(e) e.textContent = '';
-  if(p && pf){
-    if(spinning){ p.classList.add('on'); pf.classList.add('spin'); pf.style.width='100%'; }
-    else if(progPct!=null){ p.classList.add('on'); pf.classList.remove('spin'); pf.style.width=progPct+'%'; }
-    else{ p.classList.remove('on'); pf.classList.remove('spin'); }
-  }
-}
-function intelSetError(msg){
-  const e=$('intel-err'); if(e) e.textContent=msg;
-  intelSetStatus('Ready', null);
-  const btn=$('intel-scan-btn'); if(btn){ btn.textContent='★ Scan Now'; btn.disabled=false; }
-}
-function intelUpdateStats(){
-  const v=intelState.vault;
-  const el=$('intel-stats-display'); if(!el)return;
-  el.innerHTML = v.length
-    ? `<strong>${v.length}</strong> brief${v.length>1?'s':''} in vault<br><span style="font-size:.62rem">${v[0]?.savedAt||''}</span>`
-    : `vault empty`;
-  const badge=$('intel-badge'); if(badge){ badge.textContent=v.length; badge.style.display=v.length?'':'none'; }
-}
-
-/* ── SCAN ── */
-async function intelScan(){
-  const btn=$('intel-scan-btn'); if(btn){ btn.textContent='Scanning…'; btn.disabled=true; }
-  $('intel-review-area').innerHTML='';
-  intelState.phase='scanning'; intelState.emails=[]; intelState.summaries=[]; intelState.idx=0;
-  intelSetStatus('Connecting to Gmail…', null, true);
-
-  try{
-    /* Step 1: fetch emails via Gmail MCP */
-    const d = await intelCallAPI(
-      [{ role:'user', content:'Search my Gmail for the 5 most recent emails from McKinsey & Company — sender domain mckinsey.com OR subject containing McKinsey. For each email retrieve the full body text including any quoted/forwarded content. Return ONLY a valid JSON array, no markdown fences, no preamble. Each object must have: {"id":string,"subject":string,"date":string,"sender":string,"body":string} — body must be full text, at least 200 characters if available.' }],
-      null, true, 6000
-    );
-    const emails = intelParseJSON(intelText(d));
-    if(!emails || !emails.length) throw new Error('No McKinsey emails found in your inbox. Make sure Gmail is connected and McKinsey emails exist.');
-
-    intelState.emails = emails;
-    intelState.phase = 'processing';
-    intelSetStatus(`Found ${emails.length} update${emails.length>1?'s':''}. Generating briefs…`, 10, false);
-
-    /* Step 2: summarise each */
-    const summaries = [];
-    for(let i=0; i<emails.length; i++){
-      intelSetStatus(`Summarizing ${i+1} of ${emails.length}…`, Math.round(10 + (i/emails.length)*85), false);
-      const e = emails[i];
-      const sd = await intelCallAPI(
-        [{ role:'user', content:`You are a sharp strategy analyst. Summarize this McKinsey report for a finance & consulting professional (EY/ICICI background, MFE applicant). Return ONLY a JSON object with EXACTLY these keys:\n- "tldr": 1 paragraph, max 65 words, no fluff\n- "bullets": array of EXACTLY 4 key insight strings (max 22 words each)\n- "actions": array of EXACTLY 3 actionable takeaways starting with a strong verb (max 18 words each)\n\nNo markdown. No preamble. Just the JSON object.\n\nSubject: ${e.subject}\nDate: ${e.date}\n\n${e.body.slice(0,7000)}` }],
-        'Respond only with a valid JSON object. No markdown fences. No explanation.',
-        false, 1400
-      );
-      const p = intelParseJSON(intelText(sd));
-      if(p && p.tldr) summaries.push({ ...e, ...p });
-      else summaries.push({ ...e, tldr:'Could not summarize this email.', bullets:[], actions:[] });
-    }
-
-    if(!summaries.length) throw new Error('Summarization failed. Please try again.');
-    intelState.summaries = summaries;
-    intelState.idx = 0;
-    intelState.phase = 'reviewing';
-    intelSetStatus(`${summaries.length} brief${summaries.length>1?'s':''} ready — review below`, 100, false);
-    if(btn){ btn.textContent='★ Scan Now'; btn.disabled=false; }
-    intelRenderReview();
-
-  } catch(err){
-    intelSetError('⚠ ' + err.message);
-    intelState.phase='idle';
-    if(btn){ btn.textContent='★ Scan Now'; btn.disabled=false; }
-  }
-}
-
-/* ── REVIEW ── */
-function intelRenderReview(){
-  const area = $('intel-review-area'); if(!area) return;
-  if(intelState.phase !== 'reviewing' || intelState.idx >= intelState.summaries.length){
-    intelRenderDone(); return;
-  }
-  const cur = intelState.summaries[intelState.idx];
-  const total = intelState.summaries.length;
-  const pct = Math.round((intelState.idx / total) * 100);
-
-  const keyNums = (cur.key_numbers||[]).map(n=>
-    `<div class="ir-stat"><div class="ir-stat-val">${ESC(n.stat||'')}</div><div class="ir-stat-ctx">${ESC(n.context||'')}</div></div>`
-  ).join('');
-
-  const frameworks = (cur.frameworks||[]).map(f=>
-    `<span class="ir-framework">${ESC(f)}</span>`
-  ).join('');
-
-  area.innerHTML = `
-    <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--light);margin-bottom:5px;letter-spacing:.06em">
-      <span>${intelState.idx+1} of ${total}</span><span>${total-intelState.idx-1} remaining</span>
-    </div>
-    <div style="height:3px;background:var(--bdr);border-radius:2px;margin-bottom:18px">
-      <div style="height:3px;background:var(--red);border-radius:2px;width:${pct}%;transition:width .4s"></div>
-    </div>
-    <div class="intel-review">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-        <span class="ir-doctype">${ESC(cur.doc_type||'Report')}</span>
-        ${frameworks ? `<div style="display:flex;gap:5px;flex-wrap:wrap">${frameworks}</div>` : ''}
-      </div>
-      <div class="ir-counter">★ BRIEF ${intelState.idx+1} / ${total}</div>
-      <div class="ir-meta">${ESC(cur.date||'')} · ${ESC((cur.sender||'McKINSEY').toUpperCase())}</div>
-      <div class="ir-subject">${ESC(cur.subject||'Untitled')}</div>
-      ${cur.theme ? `<div class="ir-theme">${ESC(cur.theme)}</div>` : ''}
-
-      <div class="ir-sec">TL;DR</div>
-      <div class="ir-tldr">${ESC(cur.tldr||'')}</div>
-
-      ${keyNums ? `<div class="ir-sec">Key Numbers</div><div class="ir-stats-row">${keyNums}</div>` : ''}
-
-      <div class="ir-sec">Key Insights</div>
-      <div class="ir-bullets">
-        ${(cur.bullets||[]).map((b,i)=>`
-          <div class="ir-bullet">
-            <span class="ir-bnum">0${i+1}</span>
-            <span class="ir-btext">${ESC(b)}</span>
-          </div>`).join('')}
-      </div>
-
-      ${cur.so_what ? `<div class="ir-sec">So What — For You</div><div class="ir-sowhat">${ESC(cur.so_what)}</div>` : ''}
-
-      <div class="ir-sec">Actionable Takeaways</div>
-      <div class="ir-actions-box">
-        ${(cur.actions||[]).map(a=>`
-          <div class="ir-action">
-            <span class="ir-arrow">→</span>
-            <span class="ir-atext">${ESC(a)}</span>
-          </div>`).join('')}
-      </div>
-
-      <div class="ir-btns">
-        <button class="ir-btn-dis" onclick="intelDiscard()">✕ Discard</button>
-        <button class="ir-btn-keep" onclick="intelKeep()">↓ Keep to Vault</button>
-      </div>
-    </div>`;
-}
-
-function intelKeep(){
-  const cur = intelState.summaries[intelState.idx];
-  intelState.vault.unshift({ ...cur, savedAt: new Date().toLocaleDateString('en-IN') });
-  LS.set(INTEL_KEY, intelState.vault);
-  intelAdvance();
-}
-function intelDiscard(){ intelAdvance(); }
-function intelAdvance(){
-  intelState.idx++;
-  if(intelState.idx >= intelState.summaries.length){
-    intelState.phase = 'done';
-    intelRenderDone();
-  } else {
-    intelRenderReview();
-  }
-  intelUpdateStats();
-}
-
-function intelRenderDone(){
-  const area = $('intel-review-area'); if(!area) return;
-  const kept = intelState.vault.length;
-  area.innerHTML = `
-    <div class="intel-done-msg">
-      <div class="intel-done-icon">★</div>
-      <div class="intel-done-text">${intelState.summaries.length ? `All ${intelState.summaries.length} briefs reviewed.` : ''} ${kept ? `${kept} saved to vault.` : 'Nothing kept this session.'}</div>
-      <button class="btn btn-sm" onclick="intelScan()">↻ Scan Again</button>
-    </div>`;
-  intelRenderVault();
-}
-
-/* ── VAULT ── */
-function intelRenderVault(){
-  const sec = $('intel-vault-section');
-  const list = $('intel-vault-list');
-  const meta = $('intel-vault-meta');
-  if(!sec || !list) return;
-  const v = intelState.vault;
-  if(!v.length){ sec.style.display='none'; return; }
-  sec.style.display='block';
-  if(meta) meta.textContent = `${v.length} brief${v.length>1?'s':''} · last saved ${v[0]?.savedAt||''}`;
-
-  list.innerHTML = v.map((item, idx) => `
-    <div class="intel-card" id="ic-${idx}">
-      <div class="ic-head" onclick="intelToggle(${idx})">
-        <div class="ic-left">
-          <div class="ic-meta">${ESC(item.savedAt||'')} · ${ESC((item.doc_type||'REPORT').toUpperCase())}</div>
-          <div class="ic-subject">${ESC(item.subject||'Untitled')}</div>
-          ${item.theme ? `<div style="font-size:.68rem;color:var(--gold);margin-top:3px;font-style:italic">${ESC(item.theme)}</div>` : ''}
-        </div>
-        <button class="ic-expand" id="ic-exp-${idx}">+ expand</button>
-      </div>
-      <div class="ic-body" id="ic-body-${idx}">
-        <div class="ic-sec">TL;DR</div>
-        <div class="ic-tldr">${ESC(item.tldr||'')}</div>
-
-        ${(item.key_numbers||[]).length ? `
-        <div class="ic-sec">Key Numbers</div>
-        <div class="ir-stats-row" style="margin-bottom:4px">
-          ${(item.key_numbers||[]).map(n=>`<div class="ir-stat"><div class="ir-stat-val">${ESC(n.stat||'')}</div><div class="ir-stat-ctx">${ESC(n.context||'')}</div></div>`).join('')}
-        </div>` : ''}
-
-        <div class="ic-sec">Key Insights</div>
-        <div class="ic-bullets">
-          ${(item.bullets||[]).map((b,i)=>`
-            <div class="ic-bullet">
-              <span class="ic-bnum">0${i+1}</span>
-              <span class="ic-btext">${ESC(b)}</span>
-            </div>`).join('')}
-        </div>
-
-        ${item.so_what ? `<div class="ic-sec">So What — For You</div><div class="ic-sowhat">${ESC(item.so_what)}</div>` : ''}
-
-        <div class="ic-sec">Actionable Takeaways</div>
-        <div class="ic-acts">
-          ${(item.actions||[]).map(a=>`
-            <div class="ic-act">
-              <span class="ic-arrow">→</span>
-              <span class="ic-atext">${ESC(a)}</span>
-            </div>`).join('')}
-        </div>
-
-        ${(item.frameworks||[]).length ? `
-        <div class="ic-sec">Frameworks</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
-          ${(item.frameworks||[]).map(f=>`<span class="ir-framework">${ESC(f)}</span>`).join('')}
-        </div>` : ''}
-
-        <div class="ic-foot">
-          <button class="ic-del" onclick="intelDeleteVault(${idx})">✕ remove from vault</button>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-function intelToggle(idx){
-  const body=$(`ic-body-${idx}`), btn=$(`ic-exp-${idx}`); if(!body)return;
-  const open=body.classList.toggle('open');
-  if(btn) btn.textContent = open ? '- collapse' : '+ expand';
-}
-function intelDeleteVault(idx){
-  intelState.vault.splice(idx,1);
-  LS.set(INTEL_KEY, intelState.vault);
-  intelRenderVault(); intelUpdateStats();
-  toast('Removed from vault');
-}
-function intelClearVault(){
-  if(!intelState.vault.length){ toast('Vault is already empty'); return; }
-  if(!confirm('Clear all McKinsey briefings from the vault?')) return;
-  intelState.vault=[];
-  LS.set(INTEL_KEY, []);
-  $('intel-review-area').innerHTML='';
-  intelRenderVault(); intelUpdateStats();
-  intelSetStatus('Vault cleared — ready to scan', null);
-  toast('✓ Vault cleared');
-}
-
-/* ── PDF Upload + Summarize ── */
-let _pdfQueue = []; // [{name, size, b64}]
-
+/* ── PDF drop zone ── */
+let _pdfQueue = [];
 function intelPdfDzOver(e){ e.preventDefault(); $('intel-pdf-drop').classList.add('drag-on'); }
 function intelPdfDzLeave(){ $('intel-pdf-drop').classList.remove('drag-on'); }
 function intelPdfDzDrop(e){ e.preventDefault(); intelPdfDzLeave(); intelPdfLoadFiles(e.dataTransfer.files); }
@@ -2171,12 +1856,9 @@ function intelPdfLoadFiles(files){
     reader.readAsDataURL(file);
   });
 }
-
 function intelPdfRenderQueue(){
-  const q = $('intel-pdf-queue');
-  const btn = $('intel-pdf-btn');
-  if(!q) return;
-  if(!_pdfQueue.length){ q.innerHTML=''; if(btn) btn.style.display='none'; return; }
+  const q=$('intel-pdf-queue'), btn=$('intel-pdf-btn'); if(!q)return;
+  if(!_pdfQueue.length){ q.innerHTML=''; if(btn)btn.style.display='none'; return; }
   if(btn) btn.style.display='';
   q.innerHTML = _pdfQueue.map((f,i)=>`
     <div class="intel-pdf-item">
@@ -2186,55 +1868,248 @@ function intelPdfRenderQueue(){
       <button class="intel-pdf-item-del" onclick="intelPdfRemove(${i})">✕</button>
     </div>`).join('');
 }
-
 function intelPdfRemove(i){ _pdfQueue.splice(i,1); intelPdfRenderQueue(); }
+function intelPdfSetStatus(msg, spin){
+  const s=$('intel-pdf-status'), p=$('intel-prog'), pf=$('intel-prog-fill'); if(!s)return;
+  s.textContent=msg;
+  if(p&&pf){ if(spin){p.classList.add('on');pf.classList.add('spin');}else{p.classList.remove('on');pf.classList.remove('spin');} }
+}
 
-function intelPdfSetStatus(msg){ const el=$('intel-pdf-status'); if(el) el.textContent=msg; }
-
+/* ── Summarise ── */
 async function intelSummarizePDFs(){
   if(!_pdfQueue.length){ toast('No PDFs loaded'); return; }
   const btn=$('intel-pdf-btn');
-  if(btn){ btn.textContent='Analyzing…'; btn.disabled=true; }
-  intelPdfSetStatus('Running deep analysis…');
+  if(btn){ btn.textContent='Analysing…'; btn.disabled=true; }
+  intelPdfSetStatus('Running deep analysis…', true);
+  $('intel-review-area').innerHTML='';
+  intelState.summaries=[]; intelState.idx=0;
 
-  const summaries = [];
   for(let i=0; i<_pdfQueue.length; i++){
     const f = _pdfQueue[i];
-    intelPdfSetStatus(`Analyzing ${i+1} of ${_pdfQueue.length}: ${f.name}`);
+    intelPdfSetStatus(`Analysing ${i+1}/${_pdfQueue.length}: ${f.name.slice(0,32)}…`, true);
     try{
       const d = await intelCallAPI(
         [{ role:'user', content:[
           { type:'document', source:{ type:'base64', media_type:'application/pdf', data: f.b64 } },
-          { type:'text', text: buildSumPrompt('', { source:'uploaded PDF document', subject: f.name.replace(/\.pdf$/i,''), date: new Date().toLocaleDateString('en-IN') }) }
+          { type:'text', text: buildPrompt({ source:'uploaded PDF', title: f.name.replace(/\.pdf$/i,''), date: new Date().toLocaleDateString('en-IN') }) }
         ]}],
-        INTEL_SYSTEM, false, 2400
+        INTEL_SYSTEM, 2600
       );
-      const raw = intelText(d);
-      const p = intelParseJSON(raw);
-      summaries.push(p && p.tldr
-        ? { subject: f.name.replace(/\.pdf$/i,''), date: new Date().toLocaleDateString('en-IN'), sender: 'PDF Upload', ...p }
-        : _fallbackSummary(f.name.replace(/\.pdf$/i,''), 'pdf')
+      const p = intelParseJSON(intelText(d));
+      intelState.summaries.push(p && p.tldr
+        ? { filename: f.name, savedAt:'', starred:false, folder: p.suggested_folder||'General', ...p }
+        : { filename:f.name, doc_type:'Report', theme:'', tldr:'Analysis failed — try again.', key_numbers:[], insights:[], so_what:'', tangible_outputs:[], frameworks:[], suggested_folder:'General', starred:false, folder:'General' }
       );
     } catch(err){
-      summaries.push(_fallbackSummary(f.name.replace(/\.pdf$/i,''), 'pdf'));
+      intelState.summaries.push({ filename:f.name, doc_type:'Report', theme:'Error: '+err.message.slice(0,60), tldr:'', key_numbers:[], insights:[], so_what:'', tangible_outputs:[], frameworks:[], suggested_folder:'General', starred:false, folder:'General' });
     }
   }
 
-  intelState.summaries = summaries;
-  intelState.idx = 0;
-  intelState.phase = 'reviewing';
-  $('intel-review-area').innerHTML='';
-  intelSetStatus(`${summaries.length} PDF brief${summaries.length>1?'s':''} ready — review below`, 100, false);
+  intelPdfSetStatus('', false);
+  _pdfQueue=[]; intelPdfRenderQueue();
+  intelState.phase='reviewing'; intelState.idx=0;
+  if(btn){ btn.textContent='★ Analyse PDFs'; btn.disabled=false; }
   intelRenderReview();
-
-  intelPdfSetStatus(`✓ Done — ${summaries.length} analyzed`);
-  _pdfQueue = []; intelPdfRenderQueue();
-  if(btn){ btn.textContent='★ Summarize PDFs'; btn.disabled=false; }
 }
 
-/* Init Intel on load */
-intelUpdateStats();
+/* ── Review ── */
+function intelRenderReview(){
+  const area=$('intel-review-area'); if(!area)return;
+  if(!intelState.summaries.length || intelState.idx >= intelState.summaries.length){
+    area.innerHTML=''; return;
+  }
+  const cur = intelState.summaries[intelState.idx];
+  const total = intelState.summaries.length;
+
+  const nums = (cur.key_numbers||[]).map(n=>
+    `<div class="ir-stat"><div class="ir-stat-val">${ESC(n.stat||'')}</div><div class="ir-stat-ctx">${ESC(n.context||'')}</div></div>`
+  ).join('');
+
+  const typeLabel = {MODEL:'MODEL',APPLY:'APPLY',READ:'READ',NOTE:'NOTE',SHARE:'SHARE'};
+  const tangibles = (cur.tangible_outputs||[]).map(t=>{
+    const cls = (t.type||'NOTE').toLowerCase();
+    return `<div class="ir-tangible"><span class="ir-ttype ${cls}">${ESC(t.type||'NOTE')}</span><span class="ir-ttext">${ESC(t.action||'')}</span></div>`;
+  }).join('');
+
+  const frameworks = (cur.frameworks||[]).map(f=>`<span class="ir-framework">${ESC(f)}</span>`).join('');
+
+  area.innerHTML = `
+    ${total>1?`<div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--light);margin-bottom:6px;letter-spacing:.06em"><span>${intelState.idx+1} of ${total}</span><span>${total-intelState.idx-1} remaining</span></div>`:''}
+    <div class="intel-review">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-wrap:wrap">
+        <span class="ir-doctype">${ESC(cur.doc_type||'Report')}</span>
+        ${frameworks}
+      </div>
+      <div class="ir-meta">${ESC(cur.filename||'')}</div>
+      ${cur.theme?`<div class="ir-theme">"${ESC(cur.theme)}"</div>`:''}
+
+      <div class="ir-sec">TL;DR</div>
+      <div class="ir-tldr">${ESC(cur.tldr||'')}</div>
+
+      ${nums?`<div class="ir-sec">Key Numbers</div><div class="ir-stats-row">${nums}</div>`:''}
+
+      <div class="ir-sec">6 Key Insights</div>
+      <div class="ir-bullets">
+        ${(cur.insights||[]).map((ins,i)=>`
+          <div class="ir-bullet">
+            <span class="ir-bnum">0${i+1}</span>
+            <div>
+              <div style="font-size:.84rem;font-weight:700;color:var(--ink);margin-bottom:2px">${ESC(ins.headline||ins)}</div>
+              ${ins.detail?`<div style="font-size:.8rem;color:var(--mid);line-height:1.6">${ESC(ins.detail)}</div>`:''}
+            </div>
+          </div>`).join('')}
+      </div>
+
+      ${cur.so_what?`<div class="ir-sec">Relevance to You</div><div class="ir-sowhat">${ESC(cur.so_what)}</div>`:''}
+
+      ${tangibles?`<div class="ir-sec">5 Tangible Outputs</div><div class="ir-tangibles">${tangibles}</div>`:''}
+
+      <div class="ir-btns">
+        ${total>1&&intelState.idx<total-1?`<button class="ir-btn-dis" onclick="intelSkip()">→ Next</button>`:''}
+        <button class="ir-btn-keep" onclick="intelOpenModal(${intelState.idx})">⭐ Star &amp; File</button>
+      </div>
+    </div>`;
+}
+
+function intelSkip(){
+  intelState.idx++;
+  if(intelState.idx < intelState.summaries.length) intelRenderReview();
+  else $('intel-review-area').innerHTML='';
+}
+
+/* ── Modal ── */
+function intelOpenModal(idx){
+  intelState.pendingSave = idx;
+  intelState.selectedFolder = intelState.summaries[idx]?.suggested_folder || 'General';
+  const modal=$('intel-modal-bg'), sub=$('intel-modal-sub');
+  if(sub) sub.textContent = intelState.summaries[idx]?.filename || '';
+  modal.style.display='flex';
+  intelRenderModalFolders();
+}
+function intelCloseModal(){ $('intel-modal-bg').style.display='none'; intelState.pendingSave=null; }
+function intelRenderModalFolders(){
+  const wrap=$('intel-modal-folders'); if(!wrap)return;
+  wrap.innerHTML = intelState.folders.map(f=>`
+    <button class="imf-btn${f===intelState.selectedFolder?' on':''}" onclick="intelSelectFolder('${ESC(f)}')">${ESC(f)}</button>
+  `).join('');
+}
+function intelSelectFolder(f){ intelState.selectedFolder=f; intelRenderModalFolders(); }
+function intelConfirmSave(){
+  const idx = intelState.pendingSave;
+  if(idx == null) return;
+  const brief = { ...intelState.summaries[idx], starred:true, folder:intelState.selectedFolder, savedAt:new Date().toLocaleDateString('en-IN') };
+  intelState.vault.unshift(brief);
+  LS.set(INTEL_KEY, intelState.vault);
+  intelCloseModal();
+  intelSkip();
+  intelRenderVault();
+  intelUpdateBadge();
+  toast(`⭐ Filed to "${intelState.selectedFolder}"`);
+}
+
+/* ── Folders ── */
+function intelAddFolder(){
+  const inp=$('ivp-new-folder'); const v=(inp?.value||'').trim(); if(!v)return;
+  if(!intelState.folders.includes(v)){ intelState.folders.push(v); LS.set(INTEL_FOLDERS_KEY,intelState.folders); }
+  intelRenderFolderBar(); inp.value=''; toast(`📁 Folder "${v}" added`);
+}
+let _activeFolder = 'all';
+function intelFolderSwitch(btn, folder){
+  _activeFolder = folder;
+  document.querySelectorAll('.ivp-ftab').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+  intelRenderVault();
+}
+function intelRenderFolderBar(){
+  const bar=$('ivp-folder-bar'); if(!bar)return;
+  bar.innerHTML = `
+    <button class="ivp-ftab${_activeFolder==='all'?' on':''}" data-folder="all" onclick="intelFolderSwitch(this,'all')">All</button>
+    <button class="ivp-ftab${_activeFolder==='starred'?' on':''}" data-folder="starred" onclick="intelFolderSwitch(this,'starred')">⭐ Starred</button>
+    ${intelState.folders.map(f=>`<button class="ivp-ftab${_activeFolder===f?' on':''}" data-folder="${ESC(f)}" onclick="intelFolderSwitch(this,'${ESC(f)}')">${ESC(f)}</button>`).join('')}
+  `;
+}
+
+/* ── Vault render ── */
+function intelRenderVault(){
+  const list=$('ivp-list'); if(!list)return;
+  intelRenderFolderBar();
+  let items = intelState.vault;
+  if(_activeFolder==='starred') items=items.filter(v=>v.starred);
+  else if(_activeFolder!=='all') items=items.filter(v=>v.folder===_activeFolder);
+  if(!items.length){
+    list.innerHTML=`<div class="ivp-empty">${_activeFolder==='all'?'No briefs yet.<br>Analyse a PDF to get started.':_activeFolder==='starred'?'No starred briefs yet.':'No briefs in this folder.'}</div>`;
+    return;
+  }
+  list.innerHTML = items.map((item, i)=>{
+    const realIdx = intelState.vault.indexOf(item);
+    const tangibles = (item.tangible_outputs||[]).map(t=>
+      `<div class="ivc-tangible"><span style="font-size:.62rem;font-family:var(--comic);opacity:.6;flex-shrink:0">${ESC(t.type||'')}</span><span>${ESC(t.action||'')}</span></div>`
+    ).join('');
+    return `<div class="ivc" id="ivc-${realIdx}">
+      <div class="ivc-head">
+        <div class="ivc-left">
+          <div class="ivc-meta">${ESC(item.savedAt||'')} · ${ESC(item.doc_type||'')}</div>
+          <div class="ivc-subject" title="${ESC(item.filename||'')}">${ESC((item.filename||'').replace(/\.pdf$/i,''))}</div>
+          <span class="ivc-folder">${ESC(item.folder||'General')}</span>
+        </div>
+        <span class="ivc-star" onclick="intelToggleStar(${realIdx})" title="Toggle star">${item.starred?'⭐':'☆'}</span>
+        <button class="ivc-expand" id="ivc-exp-${realIdx}" onclick="intelVaultToggle(${realIdx})">▾</button>
+      </div>
+      <div class="ivc-body" id="ivc-body-${realIdx}">
+        ${item.theme?`<div style="font-size:.72rem;font-style:italic;color:var(--gold);margin:8px 0 4px;line-height:1.4">"${ESC(item.theme)}"</div>`:''}
+        <div class="ivc-sec">TL;DR</div>
+        <div class="ivc-tldr">${ESC(item.tldr||'')}</div>
+        ${(item.insights||[]).length?`
+        <div class="ivc-sec">Key Insights</div>
+        <div class="ivc-bullets">${(item.insights||[]).map((ins,ii)=>`
+          <div class="ivc-bullet">
+            <span class="ivc-bnum">0${ii+1}</span>
+            <div><div style="font-size:.76rem;font-weight:700;margin-bottom:1px">${ESC(ins.headline||ins)}</div>${ins.detail?`<div class="ivc-btext">${ESC(ins.detail)}</div>`:''}</div>
+          </div>`).join('')}
+        </div>`:''}
+        ${item.so_what?`<div class="ivc-sec">Relevance</div><div class="ivc-sowhat">${ESC(item.so_what)}</div>`:''}
+        ${tangibles?`<div class="ivc-sec">Tangible Outputs</div><div class="ivc-tangibles">${tangibles}</div>`:''}
+        <button class="ivc-del" onclick="intelDeleteVault(${realIdx})">✕ remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function intelVaultToggle(idx){
+  const body=$(`ivc-body-${idx}`), btn=$(`ivc-exp-${idx}`); if(!body)return;
+  const open=body.classList.toggle('open');
+  if(btn) btn.textContent = open ? '▴' : '▾';
+}
+function intelToggleStar(idx){
+  if(intelState.vault[idx]) intelState.vault[idx].starred = !intelState.vault[idx].starred;
+  LS.set(INTEL_KEY, intelState.vault);
+  intelRenderVault(); intelUpdateBadge();
+}
+function intelDeleteVault(idx){
+  intelState.vault.splice(idx,1);
+  LS.set(INTEL_KEY, intelState.vault);
+  intelRenderVault(); intelUpdateBadge();
+  toast('Removed from vault');
+}
+function intelClearVault(){
+  if(!intelState.vault.length){ toast('Vault is already empty'); return; }
+  if(!confirm('Clear all briefs from vault?')) return;
+  intelState.vault=[]; LS.set(INTEL_KEY,[]);
+  $('intel-review-area').innerHTML='';
+  intelRenderVault(); intelUpdateBadge();
+  toast('✓ Vault cleared');
+}
+function intelUpdateBadge(){
+  const b=$('intel-badge'), bv=$('ivp-badge'); if(!b)return;
+  const n=intelState.vault.length;
+  b.textContent=n; b.style.display=n?'':'none';
+  if(bv){ bv.textContent=`${n} brief${n!==1?'s':''}`; bv.style.display=n?'':'none'; }
+}
+
+/* Init */
+intelRenderFolderBar();
 intelRenderVault();
+intelUpdateBadge();
+
 </script>
 </body>
 </html>
