@@ -554,6 +554,21 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .intel-done-text{font-size:.9rem;color:var(--mid);margin-bottom:18px}
 .intel-divider{border:none;border-top:2.5px solid var(--ink);margin:26px 0}
 .intel-vault-empty{font-size:.84rem;color:var(--light);font-style:italic;text-align:center;padding:22px 0}
+/* Review card extras */
+.ir-doctype{font-family:var(--comic);font-size:.58rem;letter-spacing:.18em;background:var(--ink);
+  color:#fff;padding:3px 10px;border-radius:100px;text-transform:uppercase}
+.ir-theme{font-family:var(--serif);font-size:1rem;font-style:italic;color:var(--gold);margin-top:-12px;margin-bottom:18px;line-height:1.4}
+.ir-stats-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.ir-stat{background:var(--c2);border:1.5px solid var(--bdr);border-radius:8px;padding:9px 12px;min-width:100px;flex:1}
+.ir-stat-val{font-family:var(--comic);font-size:.95rem;letter-spacing:.04em;color:var(--red);margin-bottom:3px}
+.ir-stat-ctx{font-size:.64rem;color:var(--light);line-height:1.4}
+.ir-sowhat{font-size:.87rem;line-height:1.8;color:var(--mid);background:var(--gold-t);
+  border:1.5px solid var(--gold);border-radius:8px;padding:12px 15px;margin-bottom:4px}
+.ir-framework{font-size:.62rem;font-weight:700;padding:3px 10px;border-radius:100px;
+  background:var(--c2);border:1.5px solid var(--bdr);color:var(--mid)}
+/* vault card extras */
+.ic-sowhat{font-size:.8rem;color:var(--mid);line-height:1.7;background:var(--gold-t);
+  border:1.5px solid var(--gold);border-radius:7px;padding:10px 13px;margin-bottom:4px}
 /* PDF upload zone */
 .intel-pdf-zone{background:var(--w);border:2.5px solid var(--ink);border-radius:13px;padding:22px 24px;
   box-shadow:4px 4px 0 var(--bdr);margin-bottom:24px}
@@ -1783,16 +1798,103 @@ async function intelCallAPI(messages, system, useMCP, maxTok=2000){
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify(body)
   });
+  if(!r.ok){ const e=await r.text(); throw new Error(`API error ${r.status}: ${e.slice(0,120)}`); }
   return r.json();
 }
 function intelText(d){ return (d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n'); }
-function intelParseJSON(t){
-  const a=t.match(/\[[\s\S]*?\]/); if(a){ try{ return JSON.parse(a[0]); }catch(e){} }
-  const o=t.match(/\{[\s\S]*\}/);  if(o){ try{ return JSON.parse(o[0]); }catch(e){} }
+function intelParseJSON(raw){
+  // strip markdown fences
+  let t = raw.replace(/```json[\s\S]*?```/g, m=>m.slice(7,-3))
+             .replace(/```[\s\S]*?```/g,     m=>m.slice(3,-3))
+             .trim();
+  // try direct parse first
+  try{ return JSON.parse(t); } catch(e){}
+  // find outermost {}
+  const s=t.indexOf('{'), e2=t.lastIndexOf('}');
+  if(s>=0 && e2>s){ try{ return JSON.parse(t.slice(s,e2+1)); }catch(e){} }
   return null;
 }
 
-/* ── State helpers ── */
+/* ── Master summarization prompt ── */
+const INTEL_SYSTEM = `You are an elite strategy research analyst. The user is Shourya — a final-year EEE student (Mahindra University, CGPA 8.0), EY Strategy & Transactions alum, currently at ICICI Bank analyzing a retail loan platform, targeting MFE programs (CMU, UChicago, Columbia, Cornell) and long-term MBA at Booth/Kellogg, and building quant models (HMM, GARCH, Neural SDE, LBO engines). He reads McKinsey reports to extract signals relevant to: consulting strategy, quant finance, India macro, tech/AI disruption, EV/energy, banking, and career positioning.
+
+Your job: produce a deeply intelligent, personalized brief — not a generic summary. Cut fluff ruthlessly. Every sentence must earn its place.
+
+CRITICAL: Respond ONLY with a single valid JSON object. No markdown fences. No preamble. No explanation outside the JSON.`;
+
+function buildSumPrompt(content, meta){
+  return `Analyze the following ${meta.source} and return a JSON object with EXACTLY these keys:
+
+"doc_type": one of ["Strategy Report","Market Analysis","Industry Research","Economic Outlook","Technology Brief","Policy Paper","Company Analysis","Mixed/Newsletter"]
+"theme": 6-10 word headline capturing the core argument (not the title)
+"tldr": 2-3 sentences max, 70 words max. What is the SINGLE most important thing this says and why it matters now. No filler.
+"key_numbers": array of 3-5 objects {stat, context} — the most important quantitative data points. Only include if numbers actually appear in the text. Each stat max 15 words, context max 12 words.
+"bullets": array of EXACTLY 5 insight strings. Each is a sharp, specific finding — not vague. Include the "so what" in the same sentence. Max 30 words each.
+"so_what": 2-3 sentences. Why does this specifically matter for someone targeting MFE/consulting roles, building quant models, or analyzing Indian banking/fintech? Make it pointed and personal.
+"actions": array of EXACTLY 3 strings starting with a strong imperative verb. Concrete, specific next steps Shourya can actually take. Max 20 words each.
+"frameworks": array of 1-3 strategy/finance frameworks that apply to this report (e.g. Porter's Five Forces, WACC, TAM/SAM, CAPM). Only if genuinely applicable.
+
+${meta.subject ? `Subject/Title: ${meta.subject}` : ''}
+${meta.date    ? `Date: ${meta.date}` : ''}
+---
+${content}`;
+}
+
+/* ── SCAN Gmail ── */
+async function intelScan(){
+  const btn=$('intel-scan-btn'); if(btn){ btn.textContent='Scanning…'; btn.disabled=true; }
+  $('intel-review-area').innerHTML='';
+  intelState.phase='scanning'; intelState.emails=[]; intelState.summaries=[]; intelState.idx=0;
+  intelSetStatus('Connecting to Gmail…', null, true);
+  try{
+    const d = await intelCallAPI(
+      [{ role:'user', content:'Search my Gmail for the 5 most recent emails from McKinsey & Company (sender domain mckinsey.com OR subject containing McKinsey). Retrieve the COMPLETE body text of each email including any forwarded or quoted sections. Return ONLY a valid JSON array, no markdown, no preamble. Each object: {"id":string,"subject":string,"date":string,"sender":string,"body":string} — body must be the full untruncated text.' }],
+      null, true, 6000
+    );
+    const emails = intelParseJSON(intelText(d));
+    if(!emails || !emails.length) throw new Error('No McKinsey emails found. Check Gmail is connected and emails exist.');
+
+    intelState.emails = emails;
+    intelState.phase = 'processing';
+    intelSetStatus(`Found ${emails.length} update${emails.length>1?'s':''}. Running deep analysis…`, 10, false);
+
+    const summaries = [];
+    for(let i=0; i<emails.length; i++){
+      intelSetStatus(`Analyzing ${i+1} of ${emails.length}: "${emails[i].subject.slice(0,40)}…"`, Math.round(10+(i/emails.length)*85), false);
+      const e = emails[i];
+      const body = e.body || '';
+      try{
+        const sd = await intelCallAPI(
+          [{ role:'user', content: buildSumPrompt(body.slice(0,9000), {source:'McKinsey email newsletter', subject:e.subject, date:e.date}) }],
+          INTEL_SYSTEM, false, 2200
+        );
+        const p = intelParseJSON(intelText(sd));
+        summaries.push(p && p.tldr ? { ...e, ...p } : _fallbackSummary(e.subject, 'email'));
+      } catch(err){ summaries.push(_fallbackSummary(e.subject, 'email')); }
+    }
+
+    if(!summaries.length) throw new Error('Analysis failed. Please try again.');
+    intelState.summaries = summaries;
+    intelState.idx = 0;
+    intelState.phase = 'reviewing';
+    intelSetStatus(`${summaries.length} deep brief${summaries.length>1?'s':''} ready`, 100, false);
+    if(btn){ btn.textContent='★ Scan Now'; btn.disabled=false; }
+    intelRenderReview();
+
+  } catch(err){
+    intelSetError('⚠ ' + err.message);
+    intelState.phase='idle';
+    if(btn){ btn.textContent='★ Scan Now'; btn.disabled=false; }
+  }
+}
+
+function _fallbackSummary(subject, source){
+  return { subject, sender: source==='pdf'?'PDF Upload':'McKinsey & Company',
+    date: new Date().toLocaleDateString('en-IN'),
+    doc_type:'Mixed/Newsletter', theme:'Could not analyze content',
+    tldr:'Summarization failed — the document may be too short or inaccessible.',
+    key_numbers:[], bullets:[], so_what:'', actions:[], frameworks:[] };
+}
 function intelSetStatus(msg, progPct, spinning){
   const s=$('intel-status'), p=$('intel-prog'), pf=$('intel-prog-fill'), e=$('intel-err');
   if(s) s.textContent = msg;
@@ -1877,20 +1979,35 @@ function intelRenderReview(){
   const total = intelState.summaries.length;
   const pct = Math.round((intelState.idx / total) * 100);
 
+  const keyNums = (cur.key_numbers||[]).map(n=>
+    `<div class="ir-stat"><div class="ir-stat-val">${ESC(n.stat||'')}</div><div class="ir-stat-ctx">${ESC(n.context||'')}</div></div>`
+  ).join('');
+
+  const frameworks = (cur.frameworks||[]).map(f=>
+    `<span class="ir-framework">${ESC(f)}</span>`
+  ).join('');
+
   area.innerHTML = `
     <div style="display:flex;justify-content:space-between;font-size:.62rem;color:var(--light);margin-bottom:5px;letter-spacing:.06em">
-      <span>${intelState.idx+1} of ${total}</span><span>${total - intelState.idx - 1} remaining</span>
+      <span>${intelState.idx+1} of ${total}</span><span>${total-intelState.idx-1} remaining</span>
     </div>
     <div style="height:3px;background:var(--bdr);border-radius:2px;margin-bottom:18px">
       <div style="height:3px;background:var(--red);border-radius:2px;width:${pct}%;transition:width .4s"></div>
     </div>
     <div class="intel-review">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+        <span class="ir-doctype">${ESC(cur.doc_type||'Report')}</span>
+        ${frameworks ? `<div style="display:flex;gap:5px;flex-wrap:wrap">${frameworks}</div>` : ''}
+      </div>
       <div class="ir-counter">★ BRIEF ${intelState.idx+1} / ${total}</div>
-      <div class="ir-meta">${ESC(cur.date||'')} · ${ESC((cur.sender||'McKinsey & Company').toUpperCase())}</div>
+      <div class="ir-meta">${ESC(cur.date||'')} · ${ESC((cur.sender||'McKINSEY').toUpperCase())}</div>
       <div class="ir-subject">${ESC(cur.subject||'Untitled')}</div>
+      ${cur.theme ? `<div class="ir-theme">${ESC(cur.theme)}</div>` : ''}
 
       <div class="ir-sec">TL;DR</div>
       <div class="ir-tldr">${ESC(cur.tldr||'')}</div>
+
+      ${keyNums ? `<div class="ir-sec">Key Numbers</div><div class="ir-stats-row">${keyNums}</div>` : ''}
 
       <div class="ir-sec">Key Insights</div>
       <div class="ir-bullets">
@@ -1900,6 +2017,8 @@ function intelRenderReview(){
             <span class="ir-btext">${ESC(b)}</span>
           </div>`).join('')}
       </div>
+
+      ${cur.so_what ? `<div class="ir-sec">So What — For You</div><div class="ir-sowhat">${ESC(cur.so_what)}</div>` : ''}
 
       <div class="ir-sec">Actionable Takeaways</div>
       <div class="ir-actions-box">
@@ -1962,14 +2081,21 @@ function intelRenderVault(){
     <div class="intel-card" id="ic-${idx}">
       <div class="ic-head" onclick="intelToggle(${idx})">
         <div class="ic-left">
-          <div class="ic-meta">${ESC(item.savedAt||'')} · MCKINSEY &amp; COMPANY</div>
+          <div class="ic-meta">${ESC(item.savedAt||'')} · ${ESC((item.doc_type||'REPORT').toUpperCase())}</div>
           <div class="ic-subject">${ESC(item.subject||'Untitled')}</div>
+          ${item.theme ? `<div style="font-size:.68rem;color:var(--gold);margin-top:3px;font-style:italic">${ESC(item.theme)}</div>` : ''}
         </div>
         <button class="ic-expand" id="ic-exp-${idx}">+ expand</button>
       </div>
       <div class="ic-body" id="ic-body-${idx}">
         <div class="ic-sec">TL;DR</div>
         <div class="ic-tldr">${ESC(item.tldr||'')}</div>
+
+        ${(item.key_numbers||[]).length ? `
+        <div class="ic-sec">Key Numbers</div>
+        <div class="ir-stats-row" style="margin-bottom:4px">
+          ${(item.key_numbers||[]).map(n=>`<div class="ir-stat"><div class="ir-stat-val">${ESC(n.stat||'')}</div><div class="ir-stat-ctx">${ESC(n.context||'')}</div></div>`).join('')}
+        </div>` : ''}
 
         <div class="ic-sec">Key Insights</div>
         <div class="ic-bullets">
@@ -1980,6 +2106,8 @@ function intelRenderVault(){
             </div>`).join('')}
         </div>
 
+        ${item.so_what ? `<div class="ic-sec">So What — For You</div><div class="ic-sowhat">${ESC(item.so_what)}</div>` : ''}
+
         <div class="ic-sec">Actionable Takeaways</div>
         <div class="ic-acts">
           ${(item.actions||[]).map(a=>`
@@ -1988,6 +2116,12 @@ function intelRenderVault(){
               <span class="ic-atext">${ESC(a)}</span>
             </div>`).join('')}
         </div>
+
+        ${(item.frameworks||[]).length ? `
+        <div class="ic-sec">Frameworks</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+          ${(item.frameworks||[]).map(f=>`<span class="ir-framework">${ESC(f)}</span>`).join('')}
+        </div>` : ''}
 
         <div class="ic-foot">
           <button class="ic-del" onclick="intelDeleteVault(${idx})">✕ remove from vault</button>
@@ -2060,37 +2194,32 @@ function intelPdfSetStatus(msg){ const el=$('intel-pdf-status'); if(el) el.textC
 async function intelSummarizePDFs(){
   if(!_pdfQueue.length){ toast('No PDFs loaded'); return; }
   const btn=$('intel-pdf-btn');
-  if(btn){ btn.textContent='Summarizing…'; btn.disabled=true; }
-  intelPdfSetStatus('Reading PDFs…');
+  if(btn){ btn.textContent='Analyzing…'; btn.disabled=true; }
+  intelPdfSetStatus('Running deep analysis…');
 
   const summaries = [];
   for(let i=0; i<_pdfQueue.length; i++){
     const f = _pdfQueue[i];
-    intelPdfSetStatus(`Summarizing ${i+1} of ${_pdfQueue.length}: ${f.name}`);
+    intelPdfSetStatus(`Analyzing ${i+1} of ${_pdfQueue.length}: ${f.name}`);
     try{
       const d = await intelCallAPI(
         [{ role:'user', content:[
           { type:'document', source:{ type:'base64', media_type:'application/pdf', data: f.b64 } },
-          { type:'text', text:`You are a sharp strategy analyst. Summarize this report/paper for a finance & consulting professional (EY/ICICI background, MFE applicant). Return ONLY a JSON object with EXACTLY these keys:\n- "tldr": 1 paragraph, max 65 words, no fluff\n- "bullets": array of EXACTLY 4 key insight strings (max 22 words each)\n- "actions": array of EXACTLY 3 actionable takeaways starting with a strong verb (max 18 words each)\n\nNo markdown. No preamble. Just the JSON object.` }
+          { type:'text', text: buildSumPrompt('', { source:'uploaded PDF document', subject: f.name.replace(/\.pdf$/i,''), date: new Date().toLocaleDateString('en-IN') }) }
         ]}],
-        'Respond only with a valid JSON object. No markdown fences. No explanation.',
-        false, 1600
+        INTEL_SYSTEM, false, 2400
       );
-      const p = intelParseJSON(intelText(d));
-      summaries.push({
-        subject: f.name.replace(/\.pdf$/i,''),
-        date: new Date().toLocaleDateString('en-IN'),
-        sender: 'PDF Upload',
-        tldr:    p?.tldr    || 'Could not summarize.',
-        bullets: p?.bullets || [],
-        actions: p?.actions || []
-      });
+      const raw = intelText(d);
+      const p = intelParseJSON(raw);
+      summaries.push(p && p.tldr
+        ? { subject: f.name.replace(/\.pdf$/i,''), date: new Date().toLocaleDateString('en-IN'), sender: 'PDF Upload', ...p }
+        : _fallbackSummary(f.name.replace(/\.pdf$/i,''), 'pdf')
+      );
     } catch(err){
-      summaries.push({ subject:f.name, date:new Date().toLocaleDateString('en-IN'), sender:'PDF Upload', tldr:'Summarization failed.', bullets:[], actions:[] });
+      summaries.push(_fallbackSummary(f.name.replace(/\.pdf$/i,''), 'pdf'));
     }
   }
 
-  /* Inject into review flow */
   intelState.summaries = summaries;
   intelState.idx = 0;
   intelState.phase = 'reviewing';
@@ -2098,7 +2227,7 @@ async function intelSummarizePDFs(){
   intelSetStatus(`${summaries.length} PDF brief${summaries.length>1?'s':''} ready — review below`, 100, false);
   intelRenderReview();
 
-  intelPdfSetStatus(`✓ Done — ${summaries.length} summarized`);
+  intelPdfSetStatus(`✓ Done — ${summaries.length} analyzed`);
   _pdfQueue = []; intelPdfRenderQueue();
   if(btn){ btn.textContent='★ Summarize PDFs'; btn.disabled=false; }
 }
