@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Bangers&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 /* ===== TOKENS ===== */
 :root{
@@ -913,8 +914,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 
     <!-- GCal sync bar -->
     <div class="gcal-sync-bar rv">
-      <span>📅 Sync with Google Calendar</span>
-      <button class="btn btn-sm" id="gcal-btn" onclick="syncGoogleCalendar()">Sync Now</button>
+      <span>📅 Import from Google Calendar — export .ics → Settings → Export</span>
+      <button class="btn btn-sm" id="gcal-btn" onclick="syncGoogleCalendar()">Import .ics</button>
     </div>
     <div class="gcal-status" id="gcal-status"></div>
 
@@ -1253,44 +1254,44 @@ if($i('ev-date')) $i('ev-date').value=todayKey();
 updatePlanBadge();
 
 /* ─── Google Calendar Sync ─── */
-async function syncGoogleCalendar(){
-  const btn=$i('gcal-btn'), status=$i('gcal-status');
-  btn.disabled=true; btn.textContent='Syncing…';
-  if(status) status.textContent='Fetching from Google Calendar…';
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{role:'user',content:'List all my Google Calendar events for the next 14 days. Return ONLY a valid JSON array, nothing else, no markdown. Format: [{"title":"...","date":"YYYY-MM-DD","time":"HH:MM","description":"...","calendarName":"..."}]. If there are no events, return [].'}],
-        mcp_servers:[{type:'url',url:'https://gcal.mcp.claude.com/mcp',name:'google-calendar'}]
-      })
-    });
-    const data=await resp.json();
-    const raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    let parsed=null;
-    try{ const clean=raw.replace(/```json|```/g,'').trim(); const s=clean.indexOf('['),e=clean.lastIndexOf(']'); if(s>=0&&e>s)parsed=JSON.parse(clean.slice(s,e+1)); }catch(e){}
-    if(parsed&&Array.isArray(parsed)){
-      // Remove old gcal events and add fresh ones
+/* ─── Google Calendar import via .ics file (no API needed) ───
+   How to use: Google Calendar → Settings → Export → download .ics → import here */
+function syncGoogleCalendar(){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='.ics,text/calendar';
+  inp.onchange=e=>{
+    const file=e.target.files[0]; if(!file)return;
+    const status=$i('gcal-status');
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const parsed=parseICS(ev.target.result);
       events=events.filter(e=>e.source!=='gcal');
-      parsed.forEach(ev=>{
-        if(!ev.date)return;
-        events.push({id:'gcal'+Date.now()+Math.random(),title:ev.title||'Calendar event',date:ev.date,time:ev.time||'',note:ev.description||ev.calendarName||'',type:'gcal',done:false,source:'gcal'});
-      });
+      parsed.forEach(ev=>events.push(ev));
       LS.set('cave_events',events);
       renderEvents(); renderToday(); updatePlanBadge();
-      if(status) status.textContent=`✓ Synced ${parsed.length} event${parsed.length!==1?'s':''} from Google Calendar`;
-      toast(`📅 ${parsed.length} events synced`);
-    } else {
-      if(status) status.textContent='Calendar appears empty or sync failed — check connection';
-    }
-  } catch(err){
-    if(status) status.textContent='Sync error: '+err.message.slice(0,60);
-    toast('Sync failed — check Google Calendar connection');
-  }
-  btn.disabled=false; btn.textContent='Sync Now';
+      if(status) status.textContent=`✓ Imported ${parsed.length} event${parsed.length!==1?'s':''} from ${file.name}`;
+      toast(`📅 ${parsed.length} calendar events imported`);
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+function parseICS(text){
+  const results=[];
+  text.split('BEGIN:VEVENT').slice(1).forEach(block=>{
+    const get=key=>{ const m=block.match(new RegExp(key+'(?:;[^:]*)?:([^\\r\\n]*)','i')); return m?m[1].trim():''; };
+    const title  = get('SUMMARY')||'Calendar event';
+    const dtstart= get('DTSTART');
+    const desc   = get('DESCRIPTION').replace(/\\n/g,' ').slice(0,120);
+    if(!dtstart) return;
+    const ds=dtstart.replace(/[TZ]/g,'').slice(0,8);
+    if(ds.length<8)return;
+    const date=`${ds.slice(0,4)}-${ds.slice(4,6)}-${ds.slice(6,8)}`;
+    const timePart=dtstart.includes('T')?dtstart.split('T')[1].replace('Z',''):'';
+    const time=timePart.length>=4?`${timePart.slice(0,2)}:${timePart.slice(2,4)}`:'';
+    results.push({id:'gcal'+Date.now()+Math.random(),title,date,time,note:desc,type:'gcal',done:false,source:'gcal'});
+  });
+  return results;
 }
 
 /* ═══ DEAL ROOM ═══ */
@@ -1337,119 +1338,326 @@ function pomReset(){ clearInterval(_pomInt);_pomInt=null;LS.set(POM_LS,{running:
 function pomToggle(){ pomAudioCtx(); const s=pomGetState(),btn=$i('pom-btn'),face=$i('pom-face'); if(s.running){clearInterval(_pomInt);_pomInt=null;LS.set(POM_LS,{running:false});if(btn)btn.textContent='▶ Resume';}else{ const fm=parseInt($i('pom-fm')?.value)||25,bm=parseInt($i('pom-bm')?.value)||5,isBreak=s.isBreak||false; const curSec=face?((p=>+p[0]*60+ +p[1])(face.textContent.split(':'))):fm*60; pomSaveState(true,Date.now()+curSec*1000,isBreak,fm,bm); pomChime(); if(btn)btn.textContent='⏸ Pause'; if(face)face.className='pom-face '+(isBreak?'rest':'run'); _pomInt=setInterval(pomTick,1000); } }
 (function pomResume(){ pSess=LS.get('cave_sess')||0; if($i('pom-sess'))$i('pom-sess').textContent=pSess; const s=pomGetState(); if(s.running&&s.endTime&&s.endTime>Date.now()){ const remaining=(s.endTime-Date.now())/1000,total=(s.isBreak?s.bm:s.fm)*60; const face=$i('pom-face'),eye=$i('pom-eye'),btn=$i('pom-btn'); if(face){face.textContent=pFmt(remaining);face.className='pom-face '+(s.isBreak?'rest':'run');} if(eye)eye.textContent=s.isBreak?'BREAK':'FOCUS TIME'; if(btn)btn.textContent='⏸ Pause'; setRing(remaining/total); _pomInt=setInterval(pomTick,1000); }else{ const fm=parseInt($i('pom-fm')?.value)||25; const face=$i('pom-face');if(face)face.textContent=pFmt(fm*60); setRing(1); } })();
 
-/* ═══ INTEL (simplified) ═══ */
-let _pdfQueue=[], _intelVault=LS.get('cave_intel_vault')||[];
-const INTEL_CHARTS=new Map();
+/* ═══════════════════════════════════════
+   INTEL — 100% client-side via PDF.js
+   Zero API calls, works on GitHub Pages
+═══════════════════════════════════════ */
 
+// Set PDF.js worker (CDN, no local files needed)
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+let _pdfQueue  = [];   // {name, size, arrayBuffer}
+let _intelVault = LS.get('cave_intel_vault') || [];
+
+/* ── Drop zone ── */
 function intelDzOver(e){ e.preventDefault(); $i('intel-pdf-drop').classList.add('drag-on'); }
 function intelDzLeave(){ $i('intel-pdf-drop').classList.remove('drag-on'); }
 function intelDzDrop(e){ e.preventDefault(); intelDzLeave(); intelLoadFiles(e.dataTransfer.files); }
-$i('intel-pdf-inp').addEventListener('change',e=>{ intelLoadFiles(e.target.files); e.target.value=''; });
+$i('intel-pdf-inp').addEventListener('change', e=>{ intelLoadFiles(e.target.files); e.target.value=''; });
+
 function intelLoadFiles(files){
-  Array.from(files).filter(f=>f.type==='application/pdf'||f.name.endsWith('.pdf')).forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{ const b64=ev.target.result.split(',')[1]; _pdfQueue.push({name:file.name,size:file.size,b64}); intelRenderQueue(); };
-    reader.readAsDataURL(file);
-  });
-}
-function intelRenderQueue(){
-  const q=$i('intel-pdf-queue'),btn=$i('intel-analyse-btn'); if(!q)return;
-  if(!_pdfQueue.length){q.innerHTML='';if(btn)btn.style.display='none';return;}
-  if(btn)btn.style.display='';
-  q.innerHTML=_pdfQueue.map((f,i)=>`<div class="intel-pdf-item"><span>📄</span><span class="intel-pdf-name">${ESC(f.name)}</span><span class="intel-pdf-size">${(f.size/1024).toFixed(0)} KB</span><button class="intel-pdf-del" onclick="intelRemovePdf(${i})">✕</button></div>`).join('');
-}
-function intelRemovePdf(i){ _pdfQueue.splice(i,1); intelRenderQueue(); }
-function intelSetStatus(msg,spin){
-  const s=$i('intel-status'),p=$i('intel-prog'),pf=$i('intel-prog-fill'); if(!s)return;
-  s.textContent=msg;
-  if(p&&pf){ if(spin){p.classList.add('on');pf.classList.add('spin');}else{p.classList.remove('on');pf.classList.remove('spin');} }
+  Array.from(files)
+    .filter(f => f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
+    .forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        _pdfQueue.push({ name: file.name, size: file.size, buf: ev.target.result });
+        intelRenderQueue();
+      };
+      reader.readAsArrayBuffer(file);
+    });
 }
 
-async function intelAnalyse(){
-  if(!_pdfQueue.length){toast('No PDFs loaded');return;}
-  const btn=$i('intel-analyse-btn'); if(btn){btn.disabled=true;btn.textContent='Analysing…';}
-  $i('intel-results').innerHTML='';
-  for(let i=0;i<_pdfQueue.length;i++){
-    const f=_pdfQueue[i];
-    intelSetStatus(`Analysing ${i+1}/${_pdfQueue.length}: ${f.name.slice(0,36)}…`,true);
-    try{
-      const resp=await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          model:'claude-sonnet-4-20250514',
-          max_tokens:1000,
-          messages:[{role:'user',content:[
-            {type:'document',source:{type:'base64',media_type:'application/pdf',data:f.b64}},
-            {type:'text',text:`Analyse this document and return ONLY a valid JSON object, no markdown fences:
-{
-  "docType": "one of: Research Paper, Strategy Report, Market Analysis, Financial Statement, Industry Report, Policy Brief, Other",
-  "summary": "2-3 sentences. Lead with the main finding. Include one key number if present.",
-  "keyPoints": ["5 bullet points, each a clear finding under 20 words"],
-  "takeaways": ["3 actionable takeaways starting with a verb, each under 20 words"],
-  "charts": [{"title":"chart title under 10 words","labels":["A","B","C"],"data":[10,20,30],"unit":"% or $ or x etc"}]
+function intelRenderQueue(){
+  const q=$i('intel-pdf-queue'), btn=$i('intel-analyse-btn'); if(!q)return;
+  if(!_pdfQueue.length){ q.innerHTML=''; if(btn) btn.style.display='none'; return; }
+  if(btn) btn.style.display='';
+  q.innerHTML = _pdfQueue.map((f,i)=>
+    `<div class="intel-pdf-item">
+      <span>📄</span>
+      <span class="intel-pdf-name">${ESC(f.name)}</span>
+      <span class="intel-pdf-size">${(f.size/1024).toFixed(0)} KB</span>
+      <button class="intel-pdf-del" onclick="intelRemovePdf(${i})">✕</button>
+    </div>`
+  ).join('');
 }
-For charts: extract up to 3 datasets of numerical data from the document. Only include if genuine numbers exist. Return [] if none.`}
-          ]}]
-        })
-      });
-      const data=await resp.json();
-      const raw=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-      let parsed=null;
-      try{ let clean=raw.replace(/```json|```/g,'').trim(); const s=clean.indexOf('{'),e=clean.lastIndexOf('}'); if(s>=0&&e>s)parsed=JSON.parse(clean.slice(s,e+1)); }catch(err){}
-      if(parsed&&parsed.summary){ intelShowCard(parsed,f.name); intelSaveVault(parsed,f.name); }
-      else{ intelShowErrorCard(f.name,'Could not parse response — please try again.'); }
-    }catch(err){ intelShowErrorCard(f.name,'Error: '+err.message.slice(0,80)); }
+function intelRemovePdf(i){ _pdfQueue.splice(i,1); intelRenderQueue(); }
+
+function intelSetStatus(msg, spin){
+  const s=$i('intel-status'), p=$i('intel-prog'), pf=$i('intel-prog-fill'); if(!s)return;
+  s.textContent = msg;
+  if(p&&pf){
+    if(spin){ p.classList.add('on'); pf.classList.add('spin'); }
+    else    { p.classList.remove('on'); pf.classList.remove('spin'); }
   }
-  intelSetStatus('',false);
+}
+
+/* ── Extract full text from PDF with PDF.js ── */
+async function extractPdfText(arrayBuffer){
+  if(!window.pdfjsLib) throw new Error('PDF.js not loaded');
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for(let p=1; p<=pdf.numPages; p++){
+    const page  = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    fullText += content.items.map(i=>i.str).join(' ') + '\n';
+  }
+  return fullText;
+}
+
+/* ── Smart local NLP ── */
+function localAnalyse(text, filename){
+  const name = filename.replace(/\.pdf$/i,'').replace(/[-_]/g,' ');
+
+  // ── Doc type detection
+  const lower = text.toLowerCase();
+  let docType = 'Document';
+  if(/abstract|introduction|methodology|conclusion|references/i.test(text)) docType='Research Paper';
+  else if(/market size|cagr|compound annual|revenue forecast/i.test(text)) docType='Market Analysis';
+  else if(/revenue|ebitda|net income|balance sheet|cash flow/i.test(text)) docType='Financial Statement';
+  else if(/strategy|framework|recommendation|objective/i.test(text)) docType='Strategy Report';
+  else if(/industry|sector|competitive|players|landscape/i.test(text)) docType='Industry Report';
+  else if(/policy|regulation|government|ministry|act of/i.test(text)) docType='Policy Brief';
+
+  // ── Sentences
+  const sentences = text
+    .replace(/\s+/g,' ')
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .map(s=>s.trim())
+    .filter(s=>s.length>40 && s.length<400 && !/^(fig|table|figure|source:|www\.|http)/i.test(s));
+
+  // ── Summary: first 3 substantive sentences
+  const summary = sentences.slice(0,3).join(' ').slice(0,520)
+    || `This document covers topics related to ${name}.`;
+
+  // ── Key points: sentences with signal words
+  const SIGNAL = /\b(key|critical|important|significant|major|primary|main|core|result|finding|show|demonstrate|indicate|reveal|suggest|conclude|increase|decrease|growth|decline|impact|trend|challenge|opportunity)\b/i;
+  const keyPoints = sentences
+    .filter(s=>SIGNAL.test(s))
+    .slice(0,8)
+    .map(s=>s.replace(/\s+/g,' ').slice(0,160))
+    .filter((s,i,a)=>a.findIndex(x=>x.slice(0,40)===s.slice(0,40))===i)
+    .slice(0,5);
+  if(keyPoints.length<3) sentences.slice(3,8).forEach(s=>{ if(keyPoints.length<5) keyPoints.push(s.slice(0,160)); });
+
+  // ── Takeaways: action sentences
+  const ACTION = /\b(should|must|need to|recommend|consider|focus|invest|review|monitor|track|implement|develop|build|analyse|explore|evaluate|ensure|leverage)\b/i;
+  const takeaways = sentences
+    .filter(s=>ACTION.test(s))
+    .slice(0,3)
+    .map(s=>s.slice(0,160));
+  if(!takeaways.length){
+    takeaways.push(
+      `Review the key findings in ${name} and identify applicable frameworks.`,
+      `Cross-reference the data points with your current models and projections.`,
+      `Note the quantitative benchmarks and add them to your Deal Room or Notes.`
+    );
+  }
+
+  // ── Extract numbers for charts
+  // Pattern: label followed by percentage, or table-like "word: number"
+  const chartData = extractNumbers(text);
+
+  return { docType, summary, keyPoints, takeaways, chartData, wordCount: text.split(/\s+/).length };
+}
+
+function extractNumbers(text){
+  // Strategy 1: "Label: XX%" or "Label XX%"
+  const pctMatches = [];
+  const pctRe = /([A-Za-z][A-Za-z\s&\/\-]{2,30})\s*[:\-–]?\s*(\d{1,3}(?:\.\d+)?)\s*%/g;
+  let m;
+  while((m=pctRe.exec(text))!==null){
+    const label = m[1].trim().replace(/\s+/g,' ');
+    const val   = parseFloat(m[2]);
+    if(label.length<40 && val>0 && val<=100) pctMatches.push({label, val});
+  }
+  // Deduplicate labels, keep first
+  const seen = new Set();
+  const deduped = pctMatches.filter(x=>{ if(seen.has(x.label))return false; seen.add(x.label); return true; });
+  if(deduped.length>=3){
+    return [{ title:'Key Percentages from Document', labels: deduped.slice(0,7).map(x=>x.label), data: deduped.slice(0,7).map(x=>x.val), unit:'%' }];
+  }
+
+  // Strategy 2: Look for $ / billion / million figures
+  const moneyRe = /([A-Za-z][A-Za-z\s&\/]{2,28})\s*[:\-–]?\s*\$?\s*(\d{1,4}(?:\.\d+)?)\s*(billion|million|bn|mn|M|B)/gi;
+  const moneyMatches = [];
+  const seen2 = new Set();
+  while((m=moneyRe.exec(text))!==null){
+    const label = m[1].trim().replace(/\s+/g,' ');
+    let val = parseFloat(m[2]);
+    const unit = m[3].toLowerCase();
+    if(unit==='bn'||unit==='b'||unit==='billion') val*=1000;
+    if(label.length<40 && !seen2.has(label)){ seen2.add(label); moneyMatches.push({label,val}); }
+  }
+  if(moneyMatches.length>=3){
+    const unit = moneyMatches[0].val>500?'$M':'$B';
+    return [{ title:'Key Figures ($M)', labels: moneyMatches.slice(0,6).map(x=>x.label), data: moneyMatches.slice(0,6).map(x=>x.val), unit }];
+  }
+
+  return [];
+}
+
+/* ── Main analyse loop ── */
+async function intelAnalyse(){
+  if(!_pdfQueue.length){ toast('No PDFs loaded'); return; }
+  if(!window.pdfjsLib){ toast('PDF.js not loaded yet — try again in a second'); return; }
+
+  const btn=$i('intel-analyse-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Extracting…'; }
+  $i('intel-results').innerHTML='';
+
+  for(let i=0; i<_pdfQueue.length; i++){
+    const f = _pdfQueue[i];
+    intelSetStatus(`Extracting text ${i+1}/${_pdfQueue.length}: ${f.name.slice(0,36)}…`, true);
+    try{
+      const text = await extractPdfText(f.buf.slice(0)); // slice copies buffer
+      if(!text || text.trim().length < 100){
+        intelShowErrorCard(f.name, 'Could not extract text — PDF may be scanned/image-only.');
+        continue;
+      }
+      const result = localAnalyse(text, f.name);
+      intelShowCard(result, f.name, text.slice(0,3000));
+      intelSaveVault(result, f.name);
+    } catch(err){
+      intelShowErrorCard(f.name, 'Extract error: '+err.message.slice(0,100));
+    }
+  }
+
+  intelSetStatus('', false);
   _pdfQueue=[]; intelRenderQueue();
-  if(btn){btn.disabled=false;btn.textContent='★ Analyse';}
+  if(btn){ btn.disabled=false; btn.textContent='★ Analyse'; }
   intelUpdateBadge();
 }
 
-function intelShowCard(d,filename){
-  const id='ic'+Date.now();
-  const area=$i('intel-results');
-  const points=(d.keyPoints||[]).map((p,i)=>`<div class="ic-point"><span class="ic-pnum">0${i+1}</span><span class="ic-ptext">${ESC(p)}</span></div>`).join('');
-  const takes=(d.takeaways||[]).map(t=>`<div class="ic-takeaway">${ESC(t)}</div>`).join('');
-  const hasCharts=(d.charts||[]).some(c=>(c.data||[]).length>0);
-  const div=document.createElement('div'); div.className='intel-card'; div.id=id;
-  div.innerHTML=`<div class="ic-header"><span class="ic-type">${ESC(d.docType||'Document')}</span><span class="ic-filename">${ESC(filename)}</span></div>
+/* ── Render cards ── */
+function intelShowCard(d, filename, rawText){
+  const id = 'ic'+Date.now()+Math.floor(Math.random()*1000);
+  const area = $i('intel-results');
+  const points = (d.keyPoints||[]).map((p,i)=>
+    `<div class="ic-point"><span class="ic-pnum">0${i+1}</span><span class="ic-ptext">${ESC(p)}</span></div>`
+  ).join('');
+  const takes = (d.takeaways||[]).map(t=>`<div class="ic-takeaway">${ESC(t)}</div>`).join('');
+  const hasChart = (d.chartData||[]).length>0;
+
+  const div = document.createElement('div');
+  div.className='intel-card'; div.id=id;
+  div.innerHTML=`
+    <div class="ic-header">
+      <span class="ic-type">${ESC(d.docType)}</span>
+      <span class="ic-filename">${ESC(filename)}</span>
+      <span style="font-size:.6rem;color:var(--light);margin-left:auto">${(d.wordCount||0).toLocaleString()} words extracted</span>
+    </div>
     <div class="ic-section">Summary</div>
-    <div class="ic-summary">${ESC(d.summary||'')}</div>
+    <div class="ic-summary">${ESC(d.summary)}</div>
     <div class="ic-section">Key Points</div>
-    <div class="ic-points">${points}</div>
+    <div class="ic-points">${points||'<span style="font-size:.8rem;color:var(--light)">No strong signal sentences found — document may be mostly tables or images.</span>'}</div>
     <div class="ic-section">Actionable Takeaways</div>
     <div class="ic-takeaways">${takes}</div>
-    ${hasCharts?`<div class="ic-section">Data</div><div class="ic-chart"><canvas id="chart-${id}" height="140"></canvas></div>`:''}`;
+    ${hasChart ? `<div class="ic-section">Extracted Data</div><div class="ic-chart"><canvas id="ch-${id}" height="140"></canvas></div>` : ''}
+    <details style="margin-top:14px">
+      <summary style="font-size:.68rem;color:var(--light);cursor:pointer;user-select:none">▾ Raw text preview (first 600 chars)</summary>
+      <pre style="font-size:.65rem;color:var(--mid);line-height:1.6;white-space:pre-wrap;margin-top:7px;background:var(--c2);border-radius:6px;padding:9px;max-height:160px;overflow-y:auto">${ESC((rawText||'').slice(0,600))}</pre>
+    </details>`;
   area.appendChild(div);
-  if(hasCharts) setTimeout(()=>intelDrawCharts(d.charts,`chart-${id}`),80);
+  if(hasChart) setTimeout(()=>intelDrawChart(d.chartData[0], `ch-${id}`), 80);
 }
-function intelShowErrorCard(filename,msg){
+
+function intelShowErrorCard(filename, msg){
   const div=document.createElement('div'); div.className='intel-card'; div.style.borderColor='var(--bdr)';
-  div.innerHTML=`<div class="ic-header"><span class="ic-type" style="background:var(--bdr);color:var(--mid)">Error</span><span class="ic-filename">${ESC(filename)}</span></div><div style="font-size:.8rem;color:var(--light);padding:8px 0">${ESC(msg)}</div>`;
+  div.innerHTML=`
+    <div class="ic-header"><span class="ic-type" style="background:var(--bdr);color:var(--mid)">Error</span><span class="ic-filename">${ESC(filename)}</span></div>
+    <div style="font-size:.8rem;color:var(--light);line-height:1.6;padding:6px 0">${ESC(msg)}<br><span style="font-size:.72rem">Note: scanned PDFs (image-only) cannot be parsed without OCR.</span></div>`;
   $i('intel-results').appendChild(div);
 }
-function intelDrawCharts(charts,canvasId){
-  const canvas=$i(canvasId); if(!canvas||typeof Chart==='undefined')return;
-  const c=charts.filter(ch=>(ch.data||[]).length>0)[0]; if(!c)return;
-  const cols=['#D4141E','#C8930A','#1565C0','#2E7D32','#7B1FA2'];
+
+function intelDrawChart(c, canvasId){
+  const canvas=$i(canvasId); if(!canvas||typeof Chart==='undefined'||!c)return;
+  const cols=['#D4141E','#C8930A','#1565C0','#2E7D32','#7B1FA2','#E65100','#00838F'];
   new Chart(canvas,{
     type:'bar',
-    data:{labels:c.labels||[],datasets:[{data:c.data||[],backgroundColor:cols.slice(0,(c.data||[]).length).map(x=>x+'cc'),borderColor:cols.slice(0,(c.data||[]).length),borderWidth:0,borderRadius:4}]},
-    options:{responsive:true,plugins:{legend:{display:false},title:{display:true,text:c.title||'',font:{size:11},color:'#5C5448'}},scales:{x:{ticks:{color:'#5C5448',font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}},y:{ticks:{color:'#5C5448',font:{size:10},callback:v=>v+(c.unit||'')},grid:{color:'rgba(0,0,0,.05)'},beginAtZero:true}}}
+    data:{
+      labels: c.labels||[],
+      datasets:[{
+        data: c.data||[],
+        backgroundColor: (c.labels||[]).map((_,i)=>(cols[i%cols.length])+'bb'),
+        borderColor:     (c.labels||[]).map((_,i)=> cols[i%cols.length]),
+        borderWidth:0, borderRadius:4
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        title:{display:!!c.title,text:c.title||'',font:{size:11,family:'DM Sans'},color:'#5C5448'}
+      },
+      scales:{
+        x:{ticks:{color:'#5C5448',font:{size:9},maxRotation:30},grid:{color:'rgba(0,0,0,.04)'}},
+        y:{ticks:{color:'#5C5448',font:{size:9},callback:v=>v+(c.unit||'')},grid:{color:'rgba(0,0,0,.04)'},beginAtZero:true}
+      }
+    }
   });
 }
-function intelSaveVault(d,filename){ _intelVault.unshift({filename,docType:d.docType,summary:d.summary,keyPoints:d.keyPoints,takeaways:d.takeaways,savedAt:new Date().toLocaleDateString('en-IN')}); LS.set('cave_intel_vault',_intelVault); intelRenderVault(); }
-function intelClearVault(){ if(!_intelVault.length){toast('Vault is empty');return;} if(!confirm('Clear all?'))return; _intelVault=[]; LS.set('cave_intel_vault',[]); intelRenderVault(); intelUpdateBadge(); toast('Vault cleared'); }
+
+function intelSaveVault(d, filename){
+  _intelVault.unshift({
+    filename, docType:d.docType, summary:d.summary,
+    keyPoints:d.keyPoints, takeaways:d.takeaways,
+    savedAt: new Date().toLocaleDateString('en-IN')
+  });
+  LS.set('cave_intel_vault', _intelVault);
+  intelRenderVault();
+}
+
+function intelClearVault(){
+  if(!_intelVault.length){toast('Vault is empty');return;}
+  if(!confirm('Clear all?'))return;
+  _intelVault=[]; LS.set('cave_intel_vault',[]);
+  intelRenderVault(); intelUpdateBadge(); toast('Vault cleared');
+}
+
 function intelRenderVault(){
   const list=$i('ivp-list'); if(!list)return;
-  if(!_intelVault.length){list.innerHTML='<div class="ivp-empty">No saved briefs yet.<br>Analyse a PDF to start.</div>';return;}
-  list.innerHTML=_intelVault.map((item,i)=>`<div class="ivc"><div class="ivc-head" onclick="intelVaultToggle(${i})"><div class="ivc-left"><div class="ivc-type">${ESC(item.savedAt||'')} · ${ESC(item.docType||'')}</div><div class="ivc-name">${ESC((item.filename||'').replace(/\.pdf$/i,''))}</div></div><button class="ivc-toggle" id="ivc-t-${i}">▾</button><button class="ivc-del" onclick="event.stopPropagation();intelDelVault(${i})">✕</button></div><div class="ivc-body" id="ivc-b-${i}"><div class="ivc-sec">Summary</div><div class="ivc-tldr">${ESC(item.summary||'')}</div>${(item.keyPoints||[]).length?`<div class="ivc-sec">Key Points</div><div>${(item.keyPoints||[]).map(p=>`<div style="font-size:.74rem;color:var(--ink);line-height:1.5;margin-bottom:4px;padding-left:10px;border-left:2px solid var(--bdr)">· ${ESC(p)}</div>`).join('')}</div>`:''}</div></div>`).join('');
+  if(!_intelVault.length){
+    list.innerHTML='<div class="ivp-empty">No saved briefs yet.<br>Analyse a PDF to start.</div>';
+    return;
+  }
+  list.innerHTML = _intelVault.map((item,i)=>`
+    <div class="ivc">
+      <div class="ivc-head" onclick="intelVaultToggle(${i})">
+        <div class="ivc-left">
+          <div class="ivc-type">${ESC(item.savedAt||'')} · ${ESC(item.docType||'')}</div>
+          <div class="ivc-name">${ESC((item.filename||'').replace(/\.pdf$/i,''))}</div>
+        </div>
+        <button class="ivc-toggle" id="ivc-t-${i}">▾</button>
+        <button class="ivc-del" onclick="event.stopPropagation();intelDelVault(${i})">✕</button>
+      </div>
+      <div class="ivc-body" id="ivc-b-${i}">
+        <div class="ivc-sec">Summary</div>
+        <div class="ivc-tldr">${ESC(item.summary||'')}</div>
+        ${(item.keyPoints||[]).length ? `
+        <div class="ivc-sec">Key Points</div>
+        <div>${(item.keyPoints||[]).map(p=>`<div style="font-size:.73rem;color:var(--ink);line-height:1.5;margin-bottom:4px;padding-left:9px;border-left:2px solid var(--bdr)">· ${ESC(p)}</div>`).join('')}</div>` : ''}
+      </div>
+    </div>`).join('');
 }
-function intelVaultToggle(i){ const body=$i(`ivc-b-${i}`),btn=$i(`ivc-t-${i}`); if(!body)return; const open=body.classList.toggle('open'); if(btn)btn.textContent=open?'▴':'▾'; }
-function intelDelVault(i){ _intelVault.splice(i,1); LS.set('cave_intel_vault',_intelVault); intelRenderVault(); intelUpdateBadge(); }
-function intelUpdateBadge(){ const b=$i('intel-badge'); if(!b)return; const n=_intelVault.length; b.textContent=n; b.style.display=n?'':'none'; }
+
+function intelVaultToggle(i){
+  const body=$i(`ivc-b-${i}`), btn=$i(`ivc-t-${i}`); if(!body)return;
+  const open = body.classList.toggle('open');
+  if(btn) btn.textContent = open ? '▴' : '▾';
+}
+function intelDelVault(i){
+  _intelVault.splice(i,1);
+  LS.set('cave_intel_vault',_intelVault);
+  intelRenderVault(); intelUpdateBadge();
+}
+function intelUpdateBadge(){
+  const b=$i('intel-badge'); if(!b)return;
+  const n=_intelVault.length; b.textContent=n; b.style.display=n?'':'none';
+}
 intelRenderVault(); intelUpdateBadge();
 </script>
 </body>
