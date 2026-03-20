@@ -1408,96 +1408,320 @@ async function extractPdfText(arrayBuffer){
   return fullText;
 }
 
-/* ── Smart local NLP ── */
-function localAnalyse(text, filename){
-  const name = filename.replace(/\.pdf$/i,'').replace(/[-_]/g,' ');
+/* ════════════════════════════════════════════════════════
+   INTEL NLP ENGINE v2
+   TextRank summarisation · TF-IDF keywords · section-aware
+   extraction · named entity hints · smart chart mining
+   100% client-side, zero API
+════════════════════════════════════════════════════════ */
 
-  // ── Doc type detection
-  const lower = text.toLowerCase();
-  let docType = 'Document';
-  if(/abstract|introduction|methodology|conclusion|references/i.test(text)) docType='Research Paper';
-  else if(/market size|cagr|compound annual|revenue forecast/i.test(text)) docType='Market Analysis';
-  else if(/revenue|ebitda|net income|balance sheet|cash flow/i.test(text)) docType='Financial Statement';
-  else if(/strategy|framework|recommendation|objective/i.test(text)) docType='Strategy Report';
-  else if(/industry|sector|competitive|players|landscape/i.test(text)) docType='Industry Report';
-  else if(/policy|regulation|government|ministry|act of/i.test(text)) docType='Policy Brief';
+// ── Stop words (English)
+const STOP = new Set('a an the and or but if in on at to of for with by from is are was were be been being have has had do does did will would could should may might shall can this that these those it its we our they their he she i me my you your who which what when where how all any each few more most other some such no nor not only same so than too very just also one two three first second last new'.split(' '));
 
-  // ── Sentences
-  const sentences = text
-    .replace(/\s+/g,' ')
-    .split(/(?<=[.!?])\s+(?=[A-Z])/)
-    .map(s=>s.trim())
-    .filter(s=>s.length>40 && s.length<400 && !/^(fig|table|figure|source:|www\.|http)/i.test(s));
-
-  // ── Summary: first 3 substantive sentences
-  const summary = sentences.slice(0,3).join(' ').slice(0,520)
-    || `This document covers topics related to ${name}.`;
-
-  // ── Key points: sentences with signal words
-  const SIGNAL = /\b(key|critical|important|significant|major|primary|main|core|result|finding|show|demonstrate|indicate|reveal|suggest|conclude|increase|decrease|growth|decline|impact|trend|challenge|opportunity)\b/i;
-  const keyPoints = sentences
-    .filter(s=>SIGNAL.test(s))
-    .slice(0,8)
-    .map(s=>s.replace(/\s+/g,' ').slice(0,160))
-    .filter((s,i,a)=>a.findIndex(x=>x.slice(0,40)===s.slice(0,40))===i)
-    .slice(0,5);
-  if(keyPoints.length<3) sentences.slice(3,8).forEach(s=>{ if(keyPoints.length<5) keyPoints.push(s.slice(0,160)); });
-
-  // ── Takeaways: action sentences
-  const ACTION = /\b(should|must|need to|recommend|consider|focus|invest|review|monitor|track|implement|develop|build|analyse|explore|evaluate|ensure|leverage)\b/i;
-  const takeaways = sentences
-    .filter(s=>ACTION.test(s))
-    .slice(0,3)
-    .map(s=>s.slice(0,160));
-  if(!takeaways.length){
-    takeaways.push(
-      `Review the key findings in ${name} and identify applicable frameworks.`,
-      `Cross-reference the data points with your current models and projections.`,
-      `Note the quantitative benchmarks and add them to your Deal Room or Notes.`
-    );
-  }
-
-  // ── Extract numbers for charts
-  // Pattern: label followed by percentage, or table-like "word: number"
-  const chartData = extractNumbers(text);
-
-  return { docType, summary, keyPoints, takeaways, chartData, wordCount: text.split(/\s+/).length };
+// ── Tokenise text into clean words
+function tokenise(text){
+  return text.toLowerCase().match(/\b[a-z][a-z\-]{2,}\b/g)||[];
 }
 
-function extractNumbers(text){
-  // Strategy 1: "Label: XX%" or "Label XX%"
-  const pctMatches = [];
-  const pctRe = /([A-Za-z][A-Za-z\s&\/\-]{2,30})\s*[:\-–]?\s*(\d{1,3}(?:\.\d+)?)\s*%/g;
+// ── TF-IDF: given array of documents (strings), return term→idf map
+function buildIDF(docs){
+  const df={};
+  docs.forEach(doc=>{
+    const terms=new Set(tokenise(doc));
+    terms.forEach(t=>{ if(!STOP.has(t)) df[t]=(df[t]||0)+1; });
+  });
+  const N=docs.length||1;
+  const idf={};
+  for(const t in df) idf[t]=Math.log((N+1)/(df[t]+1))+1;
+  return idf;
+}
+
+// ── TF vector for a string (normalised)
+function tfVec(text, idf){
+  const words=tokenise(text);
+  const tf={};
+  words.forEach(w=>{ if(!STOP.has(w)) tf[w]=(tf[w]||0)+1; });
+  const vec={};
+  for(const t in tf) vec[t]=(tf[t]/words.length)*(idf[t]||1);
+  return vec;
+}
+
+// ── Cosine similarity between two TF-IDF vectors
+function cosineSim(v1, v2){
+  let dot=0, n1=0, n2=0;
+  for(const t in v1){ dot+=(v1[t]||0)*(v2[t]||0); n1+=v1[t]**2; }
+  for(const t in v2) n2+=v2[t]**2;
+  return (n1&&n2) ? dot/(Math.sqrt(n1)*Math.sqrt(n2)) : 0;
+}
+
+// ── TextRank: rank sentences by similarity graph, return top N indices
+function textRank(sentences, idf, iterations=20, damping=0.85){
+  const n=sentences.length; if(n===0) return [];
+  const vecs=sentences.map(s=>tfVec(s,idf));
+  // Build similarity matrix
+  const sim=Array.from({length:n},(_,i)=>
+    Array.from({length:n},(_,j)=> i===j?0:cosineSim(vecs[i],vecs[j]))
+  );
+  // Normalise rows
+  const normSim=sim.map(row=>{
+    const s=row.reduce((a,b)=>a+b,0)||1;
+    return row.map(v=>v/s);
+  });
+  // Power iteration
+  let scores=new Array(n).fill(1/n);
+  for(let iter=0;iter<iterations;iter++){
+    const next=scores.map((_,i)=>
+      (1-damping)/n + damping*normSim[i].reduce((s,w,j)=>s+w*scores[j],0)
+    );
+    scores=next;
+  }
+  return scores.map((s,i)=>({i,s})).sort((a,b)=>b.s-a.s).map(x=>x.i);
+}
+
+// ── Extract top TF-IDF keywords from text
+function topKeywords(text, idf, n=12){
+  const vec=tfVec(text,idf);
+  return Object.entries(vec)
+    .filter(([t])=>t.length>3 && !STOP.has(t))
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,n)
+    .map(([t])=>t);
+}
+
+// ── Detect named entities: capitalised multi-word phrases
+function namedEntities(text){
+  const matches=text.match(/(?:[A-Z][a-z]+(?:\s[A-Z][a-z]+){1,4})/g)||[];
+  const freq={};
+  matches.forEach(m=>{ const k=m.trim(); if(k.split(' ').length>=2) freq[k]=(freq[k]||0)+1; });
+  return Object.entries(freq)
+    .filter(([k,c])=>c>=2 && k.length>6 && !/^(The |This |These |That |However |Moreover |Furthermore )/i.test(k))
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,8)
+    .map(([k])=>k);
+}
+
+// ── Section-aware text segmentation
+// Returns {abstract, execSummary, keyFindings, conclusion, body}
+function segmentSections(text){
+  const lower=text.toLowerCase();
+  const sections={abstract:'',execSummary:'',keyFindings:'',conclusion:'',body:text};
+
+  const SECTION_RE={
+    abstract:    /(?:^|\n)\s*(?:abstract|overview)\s*[\n:]/i,
+    execSummary: /(?:^|\n)\s*(?:executive\s+summary|key\s+messages?|highlights?)\s*[\n:]/i,
+    keyFindings: /(?:^|\n)\s*(?:key\s+findings?|main\s+findings?|key\s+results?|key\s+insights?|key\s+takeaways?)\s*[\n:]/i,
+    conclusion:  /(?:^|\n)\s*(?:conclusion|conclusions|summary|final\s+thoughts?)\s*[\n:]/i,
+  };
+  for(const [sec,re] of Object.entries(SECTION_RE)){
+    const match=text.match(re);
+    if(match){
+      const start=match.index+match[0].length;
+      // Take next 1200 chars as section content
+      sections[sec]=text.slice(start,start+1200).replace(/\n+/g,' ').trim();
+    }
+  }
+  return sections;
+}
+
+// ── Clean and split into quality sentences
+function splitSentences(text){
+  return text
+    .replace(/\s+/g,' ')
+    .replace(/([.!?])\s+([A-Z])/g,'$1\n$2')
+    .split('\n')
+    .map(s=>s.trim())
+    .filter(s=>{
+      if(s.length<45 || s.length>600) return false;
+      if(/^(fig|table|figure|source:|www\.|http|©|\d+\.?\s*$)/i.test(s)) return false;
+      const wordCount=s.split(/\s+/).length;
+      return wordCount>=8 && wordCount<=100;
+    });
+}
+
+// ── Score a sentence for relevance (multiple signals)
+function scoreSentence(s, idf, topKws, sections){
+  let score=0;
+  const sl=s.toLowerCase();
+  // TF-IDF alignment with top keywords
+  const kw_hits=topKws.filter(k=>sl.includes(k)).length;
+  score+=kw_hits*2.5;
+  // Appears in high-value sections
+  for(const sec of ['execSummary','keyFindings','abstract','conclusion']){
+    if(sections[sec] && sections[sec].toLowerCase().includes(sl.slice(0,50))) score+=4;
+  }
+  // Signal phrases
+  const SIGNALS=['significant','key','critical','major','primary','result','finding','shows','demonstrated','indicate','revealed','concluded','increased','decreased','growth','decline','impact','trend','challenge','opportunity','estimate','forecast','projected','compared','versus'];
+  SIGNALS.forEach(sig=>{ if(sl.includes(sig)) score+=1; });
+  // Contains numbers (quantitative = high value)
+  const numCount=(s.match(/\d+(?:\.\d+)?/g)||[]).length;
+  score+=Math.min(numCount,4)*1.5;
+  // Penalise very short sentences
+  if(s.length<80) score-=1;
+  return score;
+}
+
+// ── Main local analysis engine
+function localAnalyse(text, filename){
+  const name=filename.replace(/\.pdf$/i,'').replace(/[-_]/g,' ');
+
+  // 1. Doc type (weighted scoring)
+  const lw=text.toLowerCase();
+  const typeScores={
+    'Research Paper':   [/abstract/,/introduction/,/methodology/,/conclusion/,/references/,/doi\.|arxiv|journal/].filter(r=>r.test(lw)).length,
+    'Market Analysis':  [/market size/,/cagr/,/compound annual/,/revenue forecast/,/market share/,/addressable market/].filter(r=>r.test(lw)).length,
+    'Financial Statement':[/ebitda/,/net income/,/balance sheet/,/cash flow/,/earnings per share/,/operating profit/].filter(r=>r.test(lw)).length,
+    'Strategy Report':  [/strategic/,/recommendation/,/framework/,/competitive advantage/,/value chain/,/go.to.market/].filter(r=>r.test(lw)).length,
+    'Industry Report':  [/industry/,/sector/,/competitive landscape/,/market players/,/supply chain/,/value creation/].filter(r=>r.test(lw)).length,
+    'Policy Brief':     [/policy/,/regulation/,/government/,/ministry/,/legislative/,/compliance/].filter(r=>r.test(lw)).length,
+  };
+  const docType=Object.entries(typeScores).sort((a,b)=>b[1]-a[1])[0][1]>0
+    ? Object.entries(typeScores).sort((a,b)=>b[1]-a[1])[0][0]
+    : 'Document';
+
+  // 2. Segment text into sections
+  const sections=segmentSections(text);
+
+  // 3. Build sentence pool, prioritise section content
+  const priorityText=[sections.execSummary,sections.keyFindings,sections.abstract,sections.conclusion]
+    .filter(Boolean).join(' ');
+  const allSentences=splitSentences(text);
+  const prioritySentences=priorityText.length>100 ? splitSentences(priorityText) : [];
+
+  // 4. TF-IDF: treat each sentence as a mini-document
+  const idf=buildIDF([...allSentences, text]);
+
+  // 5. Top keywords
+  const topKws=topKeywords(text,idf,16);
+
+  // 6. Named entities
+  const entities=namedEntities(text);
+
+  // 7. TextRank on full sentence pool (capped at 200 for performance)
+  const sentPool=allSentences.slice(0,200);
+  const ranked=textRank(sentPool,idf);
+
+  // 8. Score-based selection for key points
+  const scoredSentences=allSentences.map((s,idx)=>({
+    s, score: scoreSentence(s,idf,topKws,sections) + (priorityText.includes(s.slice(0,40))?3:0)
+  })).sort((a,b)=>b.score-a.score);
+
+  // 9. Summary: blend TextRank top + section content
+  //    Use executive summary if available, otherwise TextRank top-3
+  let summaryParts=[];
+  if(sections.execSummary.length>80)
+    summaryParts.push(sections.execSummary.slice(0,320));
+  else if(sections.abstract.length>80)
+    summaryParts.push(sections.abstract.slice(0,320));
+  if(summaryParts.length===0){
+    // Fall back to TextRank: pick top 3 sentences in original order
+    const top3idx=ranked.slice(0,3).sort((a,b)=>a-b);
+    summaryParts=top3idx.map(i=>sentPool[i]).filter(Boolean);
+  }
+  const summary=summaryParts.join(' ').replace(/\s+/g,' ').slice(0,500)
+    ||`This document analyses topics related to ${name}.`;
+
+  // 10. Key points: diverse top-scored sentences, deduplicated
+  const seen=new Set();
+  const keyPoints=[];
+  for(const {s} of scoredSentences){
+    if(keyPoints.length>=6) break;
+    const key=s.slice(0,35).toLowerCase();
+    if(!seen.has(key)){ seen.add(key); keyPoints.push(s.slice(0,170)); }
+  }
+
+  // 11. Takeaways: action-oriented sentences + context-aware generated ones
+  const ACTION=/\b(should|must|need to|recommend|consider|focus|invest|monitor|implement|develop|leverage|deploy|accelerate|prioritise|prioritize|explore|evaluate|ensure|adopt|scale|reduce|improve|increase|target|build|create|establish|drive|enable)\b/i;
+  const actionSents=allSentences.filter(s=>ACTION.test(s)).slice(0,4).map(s=>s.slice(0,170));
+  const takeaways=[...actionSents];
+  // Pad with smart generated ones using top entities/keywords
+  const kw0=topKws[0]||'key findings', kw1=topKws[1]||'core metrics', kw2=topKws[2]||'trends';
+  const ent0=entities[0]||name;
+  if(takeaways.length<3) takeaways.push(`Map the ${kw0} and ${kw1} findings to your existing model assumptions and update projections accordingly.`);
+  if(takeaways.length<3) takeaways.push(`Cross-reference the ${ent0} data points with your Deal Room watchlist for overlap with current coverage.`);
+  if(takeaways.length<3) takeaways.push(`Extract quantitative benchmarks and log them as reference points in Notes for future case work.`);
+
+  // 12. Chart extraction
+  const chartData=extractNumbersAdvanced(text);
+
+  return {
+    docType, summary, keyPoints: keyPoints.slice(0,6),
+    takeaways: takeaways.slice(0,3),
+    topKeywords: topKws.slice(0,10),
+    entities: entities.slice(0,6),
+    chartData,
+    wordCount: text.split(/\s+/).length,
+    pageEstimate: Math.ceil(text.length/2800)
+  };
+}
+
+// ── Advanced number extraction with multiple strategies
+function extractNumbersAdvanced(text){
+  const charts=[];
   let m;
+
+  // Strategy 1: Percentage table — "Label ... XX%" patterns
+  const pctRe=/([A-Za-z][A-Za-z0-9\s\-&\/,]{3,35}?)\s*[:\-–—]\s*(\d{1,3}(?:\.\d{1,2})?)\s*%/g;
+  const pctMap=new Map();
   while((m=pctRe.exec(text))!==null){
-    const label = m[1].trim().replace(/\s+/g,' ');
-    const val   = parseFloat(m[2]);
-    if(label.length<40 && val>0 && val<=100) pctMatches.push({label, val});
+    const label=m[1].trim().replace(/\s+/g,' ').replace(/[,;]+$/,'');
+    const val=parseFloat(m[2]);
+    if(label.length<40 && label.length>2 && val>0 && val<=100 && !pctMap.has(label))
+      pctMap.set(label,val);
   }
-  // Deduplicate labels, keep first
-  const seen = new Set();
-  const deduped = pctMatches.filter(x=>{ if(seen.has(x.label))return false; seen.add(x.label); return true; });
-  if(deduped.length>=3){
-    return [{ title:'Key Percentages from Document', labels: deduped.slice(0,7).map(x=>x.label), data: deduped.slice(0,7).map(x=>x.val), unit:'%' }];
+  if(pctMap.size>=3){
+    const entries=[...pctMap.entries()].slice(0,8);
+    charts.push({type:'bar',title:'Key Percentages',labels:entries.map(e=>e[0]),data:entries.map(e=>e[1]),unit:'%'});
   }
 
-  // Strategy 2: Look for $ / billion / million figures
-  const moneyRe = /([A-Za-z][A-Za-z\s&\/]{2,28})\s*[:\-–]?\s*\$?\s*(\d{1,4}(?:\.\d+)?)\s*(billion|million|bn|mn|M|B)/gi;
-  const moneyMatches = [];
-  const seen2 = new Set();
+  // Strategy 2: Year-based data — find patterns like "2020: 45" or "2020 45B"
+  const yearRe=/\b(20[12]\d)\b[^\d]{0,20}?\$?\s*(\d{1,4}(?:\.\d+)?)\s*(billion|million|bn|mn|B|M|%|x)?/g;
+  const yearMap=new Map();
+  while((m=yearRe.exec(text))!==null){
+    const yr=m[1], raw=parseFloat(m[2]);
+    const unit=(m[3]||'').toLowerCase();
+    let val=raw;
+    if(unit==='b'||unit==='bn'||unit==='billion') val*=1000;
+    if(!yearMap.has(yr) && val>0 && val<1e7) yearMap.set(yr,val);
+  }
+  if(yearMap.size>=3){
+    const sorted=[...yearMap.entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(0,8);
+    charts.push({type:'line',title:'Year-on-Year Trend',labels:sorted.map(e=>e[0]),data:sorted.map(e=>e[1]),unit:''});
+  }
+
+  // Strategy 3: Named monetary figures
+  const moneyRe=/([A-Z][A-Za-z0-9\s\-&]{3,32}?)\s*(?:of|:|\-|–)?\s*\$?\s*(\d{1,5}(?:\.\d+)?)\s*(billion|million|trillion|bn|mn|B|M|T)\b/g;
+  const moneyMap=new Map();
   while((m=moneyRe.exec(text))!==null){
-    const label = m[1].trim().replace(/\s+/g,' ');
-    let val = parseFloat(m[2]);
-    const unit = m[3].toLowerCase();
-    if(unit==='bn'||unit==='b'||unit==='billion') val*=1000;
-    if(label.length<40 && !seen2.has(label)){ seen2.add(label); moneyMatches.push({label,val}); }
+    const label=m[1].trim().replace(/\s+/g,' ');
+    let val=parseFloat(m[2]);
+    const u=(m[3]||'').toLowerCase();
+    if(u==='b'||u==='bn'||u==='billion') val*=1000;
+    if(u==='t'||u==='trillion') val*=1000000;
+    if(label.length>3 && label.length<38 && !moneyMap.has(label) && val>0 && val<1e8)
+      moneyMap.set(label,val);
   }
-  if(moneyMatches.length>=3){
-    const unit = moneyMatches[0].val>500?'$M':'$B';
-    return [{ title:'Key Figures ($M)', labels: moneyMatches.slice(0,6).map(x=>x.label), data: moneyMatches.slice(0,6).map(x=>x.val), unit }];
+  if(moneyMap.size>=3 && charts.length<2){
+    const entries=[...moneyMap.entries()].slice(0,7);
+    const maxVal=Math.max(...entries.map(e=>e[1]));
+    const unit=maxVal>500?'$M':maxVal>0.5?'$B':'$';
+    charts.push({type:'bar',title:'Key Financial Figures',labels:entries.map(e=>e[0]),data:entries.map(e=>e[1]),unit:'M'});
   }
 
-  return [];
+  // Strategy 4: CAGR / growth rates
+  const cagrRe=/([A-Za-z][A-Za-z0-9\s\-&]{3,28}?)\s*(?:CAGR|growth rate|growing at|grew by|grew at)\s*[ofat]{0,3}\s*(\d{1,2}(?:\.\d+)?)\s*%/gi;
+  const cagrMap=new Map();
+  while((m=cagrRe.exec(text))!==null){
+    const label=m[1].trim().replace(/\s+/g,' ');
+    const val=parseFloat(m[2]);
+    if(label.length>2 && label.length<40 && val>0 && val<100 && !cagrMap.has(label))
+      cagrMap.set(label,val);
+  }
+  if(cagrMap.size>=3 && charts.length<2){
+    const entries=[...cagrMap.entries()].slice(0,6);
+    charts.push({type:'bar',title:'Growth Rates / CAGRs',labels:entries.map(e=>e[0]),data:entries.map(e=>e[1]),unit:'%'});
+  }
+
+  return charts.slice(0,2); // max 2 charts
 }
 
 /* ── Main analyse loop ── */
@@ -1532,37 +1756,59 @@ async function intelAnalyse(){
   intelUpdateBadge();
 }
 
-/* ── Render cards ── */
+/* ── Render result card ── */
 function intelShowCard(d, filename, rawText){
   const id = 'ic'+Date.now()+Math.floor(Math.random()*1000);
   const area = $i('intel-results');
-  const points = (d.keyPoints||[]).map((p,i)=>
+
+  const points=(d.keyPoints||[]).map((p,i)=>
     `<div class="ic-point"><span class="ic-pnum">0${i+1}</span><span class="ic-ptext">${ESC(p)}</span></div>`
   ).join('');
-  const takes = (d.takeaways||[]).map(t=>`<div class="ic-takeaway">${ESC(t)}</div>`).join('');
-  const hasChart = (d.chartData||[]).length>0;
+  const takes=(d.takeaways||[]).map(t=>`<div class="ic-takeaway">${ESC(t)}</div>`).join('');
+  const kwHTML=(d.topKeywords||[]).map(k=>`<span class="tag" style="cursor:default">${ESC(k)}</span>`).join('');
+  const entHTML=(d.entities||[]).map(e=>`<span class="tag gold" style="cursor:default">${ESC(e)}</span>`).join('');
 
-  const div = document.createElement('div');
+  const chartsHTML=(d.chartData||[]).map((c,ci)=>
+    `<div class="ic-chart" style="margin-top:${ci>0?'12px':'4px'}"><canvas id="ch-${id}-${ci}" height="140"></canvas></div>`
+  ).join('');
+
+  const div=document.createElement('div');
   div.className='intel-card'; div.id=id;
   div.innerHTML=`
     <div class="ic-header">
       <span class="ic-type">${ESC(d.docType)}</span>
       <span class="ic-filename">${ESC(filename)}</span>
-      <span style="font-size:.6rem;color:var(--light);margin-left:auto">${(d.wordCount||0).toLocaleString()} words extracted</span>
+      <span style="font-size:.6rem;color:var(--light);margin-left:auto;flex-shrink:0">
+        ~${d.pageEstimate||'?'} pages · ${(d.wordCount||0).toLocaleString()} words
+      </span>
     </div>
+
     <div class="ic-section">Summary</div>
     <div class="ic-summary">${ESC(d.summary)}</div>
-    <div class="ic-section">Key Points</div>
-    <div class="ic-points">${points||'<span style="font-size:.8rem;color:var(--light)">No strong signal sentences found — document may be mostly tables or images.</span>'}</div>
-    <div class="ic-section">Actionable Takeaways</div>
+
+    ${kwHTML ? `<div class="ic-section">Top Keywords <span style="font-size:.6rem;font-family:var(--sans);color:var(--light);text-transform:none;letter-spacing:0">(TF-IDF ranked)</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px">${kwHTML}</div>` : ''}
+
+    ${entHTML ? `<div class="ic-section">Named Entities</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px">${entHTML}</div>` : ''}
+
+    <div class="ic-section">Key Points <span style="font-size:.6rem;font-family:var(--sans);color:var(--light);text-transform:none;letter-spacing:0">(TextRank + TF-IDF scored)</span></div>
+    <div class="ic-points">${points||'<span style="font-size:.8rem;color:var(--light)">No high-signal sentences found.</span>'}</div>
+
+    <div class="ic-section">Takeaways</div>
     <div class="ic-takeaways">${takes}</div>
-    ${hasChart ? `<div class="ic-section">Extracted Data</div><div class="ic-chart"><canvas id="ch-${id}" height="140"></canvas></div>` : ''}
+
+    ${chartsHTML ? `<div class="ic-section">Extracted Data</div>${chartsHTML}` : ''}
+
     <details style="margin-top:14px">
-      <summary style="font-size:.68rem;color:var(--light);cursor:pointer;user-select:none">▾ Raw text preview (first 600 chars)</summary>
-      <pre style="font-size:.65rem;color:var(--mid);line-height:1.6;white-space:pre-wrap;margin-top:7px;background:var(--c2);border-radius:6px;padding:9px;max-height:160px;overflow-y:auto">${ESC((rawText||'').slice(0,600))}</pre>
+      <summary style="font-size:.67rem;color:var(--light);cursor:pointer;user-select:none">▾ Raw text preview</summary>
+      <pre style="font-size:.64rem;color:var(--mid);line-height:1.6;white-space:pre-wrap;margin-top:7px;background:var(--c2);border-radius:6px;padding:9px;max-height:160px;overflow-y:auto">${ESC((rawText||'').slice(0,700))}</pre>
     </details>`;
+
   area.appendChild(div);
-  if(hasChart) setTimeout(()=>intelDrawChart(d.chartData[0], `ch-${id}`), 80);
+  (d.chartData||[]).forEach((c,ci)=>{
+    setTimeout(()=>intelDrawChart(c,`ch-${id}-${ci}`),80+ci*40);
+  });
 }
 
 function intelShowErrorCard(filename, msg){
@@ -1575,16 +1821,22 @@ function intelShowErrorCard(filename, msg){
 
 function intelDrawChart(c, canvasId){
   const canvas=$i(canvasId); if(!canvas||typeof Chart==='undefined'||!c)return;
-  const cols=['#D4141E','#C8930A','#1565C0','#2E7D32','#7B1FA2','#E65100','#00838F'];
+  const cols=['#D4141E','#C8930A','#1565C0','#2E7D32','#7B1FA2','#E65100','#00838F','#AD1457'];
+  const isLine=c.type==='line';
   new Chart(canvas,{
-    type:'bar',
+    type: isLine ? 'line' : 'bar',
     data:{
       labels: c.labels||[],
       datasets:[{
         data: c.data||[],
-        backgroundColor: (c.labels||[]).map((_,i)=>(cols[i%cols.length])+'bb'),
-        borderColor:     (c.labels||[]).map((_,i)=> cols[i%cols.length]),
-        borderWidth:0, borderRadius:4
+        backgroundColor: isLine ? 'rgba(212,20,30,.1)' : (c.labels||[]).map((_,i)=>(cols[i%cols.length])+'bb'),
+        borderColor:     isLine ? '#D4141E'            : (c.labels||[]).map((_,i)=> cols[i%cols.length]),
+        borderWidth: isLine?2:0,
+        borderRadius: isLine?0:4,
+        fill: isLine,
+        tension: isLine?0.35:0,
+        pointBackgroundColor:'#D4141E',
+        pointRadius: isLine?4:0,
       }]
     },
     options:{
@@ -1594,8 +1846,8 @@ function intelDrawChart(c, canvasId){
         title:{display:!!c.title,text:c.title||'',font:{size:11,family:'DM Sans'},color:'#5C5448'}
       },
       scales:{
-        x:{ticks:{color:'#5C5448',font:{size:9},maxRotation:30},grid:{color:'rgba(0,0,0,.04)'}},
-        y:{ticks:{color:'#5C5448',font:{size:9},callback:v=>v+(c.unit||'')},grid:{color:'rgba(0,0,0,.04)'},beginAtZero:true}
+        x:{ticks:{color:'#5C5448',font:{size:9},maxRotation:28},grid:{color:'rgba(0,0,0,.04)'}},
+        y:{ticks:{color:'#5C5448',font:{size:9},callback:v=>v+(c.unit||'')},grid:{color:'rgba(0,0,0,.04)'},beginAtZero:false}
       }
     }
   });
@@ -1605,6 +1857,7 @@ function intelSaveVault(d, filename){
   _intelVault.unshift({
     filename, docType:d.docType, summary:d.summary,
     keyPoints:d.keyPoints, takeaways:d.takeaways,
+    topKeywords:d.topKeywords, entities:d.entities,
     savedAt: new Date().toLocaleDateString('en-IN')
   });
   LS.set('cave_intel_vault', _intelVault);
@@ -1624,12 +1877,14 @@ function intelRenderVault(){
     list.innerHTML='<div class="ivp-empty">No saved briefs yet.<br>Analyse a PDF to start.</div>';
     return;
   }
-  list.innerHTML = _intelVault.map((item,i)=>`
-    <div class="ivc">
+  list.innerHTML=_intelVault.map((item,i)=>{
+    const kws=(item.topKeywords||[]).slice(0,5).map(k=>`<span style="font-size:.58rem;background:var(--c2);border:1px solid var(--bdr);border-radius:4px;padding:1px 6px">${ESC(k)}</span>`).join('');
+    return `<div class="ivc">
       <div class="ivc-head" onclick="intelVaultToggle(${i})">
         <div class="ivc-left">
           <div class="ivc-type">${ESC(item.savedAt||'')} · ${ESC(item.docType||'')}</div>
           <div class="ivc-name">${ESC((item.filename||'').replace(/\.pdf$/i,''))}</div>
+          ${kws?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${kws}</div>`:''}
         </div>
         <button class="ivc-toggle" id="ivc-t-${i}">▾</button>
         <button class="ivc-del" onclick="event.stopPropagation();intelDelVault(${i})">✕</button>
@@ -1637,11 +1892,15 @@ function intelRenderVault(){
       <div class="ivc-body" id="ivc-b-${i}">
         <div class="ivc-sec">Summary</div>
         <div class="ivc-tldr">${ESC(item.summary||'')}</div>
-        ${(item.keyPoints||[]).length ? `
+        ${(item.keyPoints||[]).length?`
         <div class="ivc-sec">Key Points</div>
-        <div>${(item.keyPoints||[]).map(p=>`<div style="font-size:.73rem;color:var(--ink);line-height:1.5;margin-bottom:4px;padding-left:9px;border-left:2px solid var(--bdr)">· ${ESC(p)}</div>`).join('')}</div>` : ''}
+        <div>${(item.keyPoints||[]).map(p=>`<div style="font-size:.73rem;color:var(--ink);line-height:1.5;margin-bottom:4px;padding-left:9px;border-left:2px solid var(--bdr)">· ${ESC(p)}</div>`).join('')}</div>`:''}
+        ${(item.takeaways||[]).length?`
+        <div class="ivc-sec">Takeaways</div>
+        <div>${(item.takeaways||[]).map(t=>`<div style="font-size:.73rem;color:var(--mid);line-height:1.5;margin-bottom:4px;padding:6px 9px;background:var(--c2);border-radius:5px">→ ${ESC(t)}</div>`).join('')}</div>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function intelVaultToggle(i){
